@@ -336,10 +336,10 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
     let ex = screen_w_half / CELL_SIZE / screen_zoom + screen_x;
     let ey = screen_y - (-screen_h_half) / CELL_SIZE / screen_zoom;
 
-    let sx = (sx.floor() as isize).max(0).min(grid.width as isize - 1);
-    let sy = (sy.floor() as isize).max(0).min(grid.height as isize - 1);
-    let ex = (ex.ceil() as isize).max(0).min(grid.width as isize - 1);
-    let ey = (ey.ceil() as isize).max(0).min(grid.height as isize - 1);
+    let sx = (sx.floor() as isize).max(0).min(grid.width as isize);
+    let sy = (sy.floor() as isize).max(0).min(grid.height as isize);
+    let ex = (ex.ceil() as isize).max(0).min(grid.width as isize);
+    let ey = (ey.ceil() as isize).max(0).min(grid.height as isize);
 
     for y in sy..ey {
         for x in sx..ex {
