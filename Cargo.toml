@@ -1,0 +1,9 @@
+[package]
+name = "quell_machine"
+version = "0.1.0"
+edition = "2021"
+description = "Another Cell Machine remake but focused on speed"
+
+[dependencies]
+speedy2d = "1"
+clipboard = "0"

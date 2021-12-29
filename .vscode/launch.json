@@ -1,0 +1,45 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug quell_machine",
+			"cargo": {
+				"args": [
+					"build",
+					"--bin=quell_machine",
+					"--package=quell_machine"
+				],
+				"filter": {
+					"name": "quell_machine",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug unit tests",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--bin=quell_machine",
+					"--package=quell_machine"
+				],
+				"filter": {
+					"name": "quell_machine",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		}
+	]
+}
