@@ -7,3 +7,4 @@ description = "Another Cell Machine remake but focused on speed"
 [dependencies]
 speedy2d = "1"
 clipboard = "0"
+image = "0"

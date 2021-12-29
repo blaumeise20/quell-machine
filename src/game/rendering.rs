@@ -1,11 +1,11 @@
 extern crate clipboard;
 
-use std::{time::Instant, collections::HashMap, iter::IntoIterator, rc::Rc};
-
+use std::{time::Instant, collections::HashMap, rc::Rc};
 use clipboard::{ClipboardContext, ClipboardProvider};
-use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
-use crate::game::cells::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER};
+use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
+use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
+use crate::game::cells::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER};
 use super::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, MOVER, GENERATOR, Cell, WALL, PUSH, SLIDE, ENEMY, PULLER}, direction::Direction, update::update, codes::{import, export}};
 
 pub static mut screen_x: f32 = DEFAULT_GRID_WIDTH as f32 / 2.0;
@@ -86,15 +86,17 @@ impl WindowHandler for WinHandler {
                 }
             }
             macro_rules! cell_img {
-                ($path_0:literal, $path_1:literal, $path_2:literal, $path_3:literal) => {
+                ($path:literal $amount:literal) => {{
+                    let [tex0, tex1, tex2, tex3] = create_rotated_textures($amount, concat!("assets/cells/", $path, ".png"));
                     [
-                        img!(concat!("assets/cells/", $path_0, ".png")),
-                        img!(concat!("assets/cells/", $path_1, ".png")),
-                        img!(concat!("assets/cells/", $path_2, ".png")),
-                        img!(concat!("assets/cells/", $path_3, ".png")),
+                        g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex0.width(), tex0.height()), &tex0.into_raw()).unwrap(),
+                        g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex1.width(), tex1.height()), &tex1.into_raw()).unwrap(),
+                        g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex2.width(), tex2.height()), &tex2.into_raw()).unwrap(),
+                        g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex3.width(), tex3.height()), &tex3.into_raw()).unwrap(),
                     ]
-                }
+                }}
             }
+
             let font = Font::new(include_bytes!("../../assets/font.ttf")).unwrap();
 
             unsafe {
@@ -109,18 +111,18 @@ impl WindowHandler for WinHandler {
             let assets = Assets {
                 cell_bg: img!("assets/background.png"),
                 cells: collection![
-                    WALL => cell_img!("wall", "wall", "wall", "wall"),
-                    MOVER => cell_img!("mover_0", "mover_1", "mover_2", "mover_3"),
-                    PULLER => cell_img!("puller_0", "puller_1", "puller_2", "puller_3"),
-                    PULLSHER => cell_img!("pullsher_0", "pullsher_1", "pullsher_2", "pullsher_3"),
-                    GENERATOR => cell_img!("generator_0", "generator_1", "generator_2", "generator_3"),
-                    ROTATOR_CW => cell_img!("rotator_cw", "rotator_cw", "rotator_cw", "rotator_cw"),
-                    ROTATOR_CCW => cell_img!("rotator_ccw", "rotator_ccw", "rotator_ccw", "rotator_ccw"),
-                    ORIENTATOR => cell_img!("orientator_0", "orientator_1", "orientator_2", "orientator_3"),
-                    PUSH => cell_img!("push", "push", "push", "push"),
-                    SLIDE => cell_img!("slide_0", "slide_1", "slide_0", "slide_1"),
-                    TRASH => cell_img!("trash", "trash", "trash", "trash"),
-                    ENEMY => cell_img!("enemy", "enemy", "enemy", "enemy"),
+                    WALL => cell_img!("wall" 1),
+                    MOVER => cell_img!("mover" 4),
+                    PULLER => cell_img!("puller" 4),
+                    PULLSHER => cell_img!("pullsher" 4),
+                    GENERATOR => cell_img!("generator" 4),
+                    ROTATOR_CW => cell_img!("rotator_cw" 1),
+                    ROTATOR_CCW => cell_img!("rotator_ccw" 1),
+                    ORIENTATOR => cell_img!("orientator" 4),
+                    PUSH => cell_img!("push" 1),
+                    SLIDE => cell_img!("slide" 2),
+                    TRASH => cell_img!("trash" 1),
+                    ENEMY => cell_img!("enemy" 1),
                 ],
                 font,
             };
@@ -370,6 +372,21 @@ struct Assets {
     cells: HashMap<CellType, [ImageHandle; 4]>,
 
     font: Font,
+}
+
+fn create_rotated_textures(amount: usize, path: &str) -> [ImageBuffer<Rgba<u8>, Vec<u8>>; 4] {
+    let first_texture = image::open(path).unwrap().to_rgba8();
+    let mut textures = [first_texture.clone(), first_texture.clone(), first_texture.clone(), first_texture];
+    for (i, img) in textures.iter_mut().enumerate() {
+        match i % amount {
+            0 => {},
+            1 => *img = rotate90(img),
+            2 => *img = rotate180(img),
+            3 => *img = rotate270(img),
+            _ => unreachable!(),
+        }
+    }
+    textures
 }
 
 fn is_inside<T: PartialOrd>(rect: Rectangle<T>, point: Vector2<T>) -> bool {
