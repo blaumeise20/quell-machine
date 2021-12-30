@@ -5,7 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{HOTBAR_CELLS, CELL_DATA}};
+use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::CELL_DATA};
 
 pub static mut screen_x: f32 = DEFAULT_GRID_WIDTH as f32 / 2.0;
 pub static mut screen_y: f32 = DEFAULT_GRID_HEIGHT as f32 / 2.0;
@@ -159,9 +159,8 @@ impl WindowHandler for WinHandler {
 
             // cells
             #[allow(clippy::needless_range_loop)]
-            for i in 0..HOTBAR_CELLS.len() {
-                let cell_type = HOTBAR_CELLS[i];
-                let cell_img = &assets.cells.get(&cell_type).unwrap()[usize::from(self.direction)];
+            for i in 0..CELL_DATA.len() {
+                let cell_img = &assets.cells.get(&CELL_DATA[i].id).unwrap()[usize::from(self.direction)];
                 let rect = Rectangle::new(
                     Vector2::new(
                         (i as f32 * HOTBAR_CELL_SIZE * 1.5) + (HOTBAR_CELL_SIZE / 2.0),
@@ -190,7 +189,7 @@ impl WindowHandler for WinHandler {
             );
 
             // active item
-            let cell_img = &assets.cells.get(&HOTBAR_CELLS[self.active_item]).unwrap()[usize::from(self.direction)];
+            let cell_img = &assets.cells.get(&CELL_DATA[self.active_item].id).unwrap()[usize::from(self.direction)];
             g.draw_rectangle_image(
                 Rectangle::new(
                     Vector2::new(
@@ -219,7 +218,7 @@ impl WindowHandler for WinHandler {
                 let screen_h_half = SCREEN_HEIGHT / 2.0;
                 let x = (self.mouse_pos.x - screen_w_half) / CELL_SIZE / screen_zoom + screen_x;
                 let y = screen_y - (self.mouse_pos.y - screen_h_half) / CELL_SIZE / screen_zoom;
-                let cell = Cell::new(HOTBAR_CELLS[self.active_item], self.direction);
+                let cell = Cell::new(CELL_DATA[self.active_item].id, self.direction);
                 if let Some(MouseButton::Left) = self.mouse {
                     grid.set(x.floor() as isize, y.floor() as isize, cell);
                 }

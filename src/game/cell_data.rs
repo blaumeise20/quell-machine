@@ -10,9 +10,6 @@ macro_rules! celld {
         }
     )*} => {
         $( pub const $id_name: CellType = $id; )*
-        pub static HOTBAR_CELLS: &[CellType] = &[
-            $($id_name, )*
-        ];
         pub static CELL_DATA: &[CellData] = &[
             $(
                 CellData {
