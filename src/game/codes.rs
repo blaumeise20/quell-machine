@@ -54,7 +54,6 @@ pub fn import(input: &str) -> Result<(), &'static str> { unsafe {
 
     let mut cell_groups = Vec::new();
     for cell_group in input {
-        if cell_group.is_empty() { continue; }
         cell_groups.push(decode_cell_group(cell_group));
     }
 
@@ -67,12 +66,16 @@ pub fn import(input: &str) -> Result<(), &'static str> { unsafe {
     }
     let mut cell_arr = cell_arr.into_iter();
 
-    for y in 0..grid.height {
-        for x in 0..grid.width {
-            if let Some(cell_str) = cell_arr.next() {
-                if cell_str.is_empty() { continue; }
-                grid.set(x as isize, y as isize, decode_cell(cell_str));
-            }
+    let mut x = 0;
+    let mut y = 0;
+    while let Some(cell_str) = cell_arr.next() {
+        if !cell_str.is_empty() {
+            grid.set(x, y, decode_cell(cell_str));
+        }
+        x += 1;
+        if x >= grid.width as isize {
+            x = 0;
+            y += 1;
         }
     }
 
