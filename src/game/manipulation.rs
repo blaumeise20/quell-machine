@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use super::{direction::Direction, cells::{grid, Cell, WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER}};
+use super::{direction::Direction, cells::{grid, Cell, WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER}};
 
 pub fn can_move(cell: &Cell, direction: Direction) -> bool {
     match cell.id {
@@ -19,7 +19,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
 
         let cell = grid.get(tx, ty);
         if let Some(cell) = cell {
-            if cell.id == MOVER || cell.id == PULLER {
+            if cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER {
                 if cell.direction == dir {
                     force += 1;
                 }
@@ -49,7 +49,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
         ty -= oy;
 
         let mut cell = grid.take(tx, ty).unwrap();
-        if (cell.id == MOVER || cell.id == PULLER) && cell.direction == dir {
+        if (cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER) && cell.direction == dir {
             cell.updated = true;
         }
 
@@ -84,7 +84,7 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
     loop {
         let cell = grid.get_mut(cx - ox, cy - oy);
         if let Some(cell) = cell {
-            if cell.id == MOVER || cell.id == PULLER {
+            if cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER {
                 if cell.direction == dir {
                     cell.updated = true;
                     force += 1;
