@@ -4,6 +4,7 @@ pub const DEFAULT_GRID_WIDTH: usize = 100;
 pub const DEFAULT_GRID_HEIGHT: usize = 100;
 
 pub static mut grid: Grid = Grid::new(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
+pub static mut initial: Grid = Grid::new(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
 
 pub type CellType = u16;
 
@@ -32,6 +33,7 @@ impl Cell {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Grid {
     pub width: usize,
     pub height: usize,

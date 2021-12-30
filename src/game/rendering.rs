@@ -5,7 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use super::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell}, direction::Direction, update::update, codes::{import, export}, cell_data::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER, MOVER, GENERATOR, WALL, PUSH, SLIDE, ENEMY, PULLER, HOTBAR_CELLS}};
+use super::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER, MOVER, GENERATOR, WALL, PUSH, SLIDE, ENEMY, PULLER, HOTBAR_CELLS}};
 
 pub static mut screen_x: f32 = DEFAULT_GRID_WIDTH as f32 / 2.0;
 pub static mut screen_y: f32 = DEFAULT_GRID_HEIGHT as f32 / 2.0;
@@ -39,6 +39,8 @@ pub struct WinHandler {
 
     running: bool,
     show_help: bool,
+    tick_times: [f32; 10],
+    is_initial: bool,
 }
 
 impl WinHandler {
@@ -58,6 +60,8 @@ impl WinHandler {
 
             running: false,
             show_help: true,
+            tick_times: [0.0; 10],
+            is_initial: true,
         }
     }
 }
@@ -138,7 +142,12 @@ impl WindowHandler for WinHandler {
         let assets = self.assets.as_ref().unwrap();
 		g.clear_screen(Color::from_hex_rgb(0x000000));
 
-        if self.running { update(); }
+        if self.running {
+            let start_time = Instant::now();
+            unsafe { do_tick(&mut self.is_initial); }
+            self.tick_times.rotate_left(1);
+            self.tick_times[9] = start_time.elapsed().as_secs_f32() / 1000.0;
+        }
 
         unsafe {
         // grid
@@ -259,6 +268,13 @@ impl WindowHandler for WinHandler {
             &assets.font.layout_text(&format!("FPS: {}", 1.0/delta_secs), 17.0, TextOptions::new()),
         );
 
+        // tick time
+        g.draw_text(
+            Vector2::new(10.0, 30.0),
+            Color::WHITE,
+            &assets.font.layout_text(&format!("Tick time: {}", self.tick_times.iter().sum::<f32>() / 10.0), 17.0, TextOptions::new()),
+        );
+
         helper.request_redraw();
 	}
 
@@ -268,8 +284,9 @@ impl WindowHandler for WinHandler {
             match key {
                 VirtualKeyCode::Escape => self.show_help = !self.show_help,
 
-                VirtualKeyCode::Space => self.running = !self.running,
-                VirtualKeyCode::G => { self.running = false; update(); },
+                VirtualKeyCode::Space => { self.running = !self.running; },
+                VirtualKeyCode::G => { self.running = false; unsafe { do_tick(&mut self.is_initial); } },
+                VirtualKeyCode::T => { if !self.is_initial { unsafe { self.running = false; grid = initial.clone(); } } },
 
                 VirtualKeyCode::Q => self.direction -= 1,
                 VirtualKeyCode::E => self.direction += 1,
@@ -312,6 +329,14 @@ impl WindowHandler for WinHandler {
     fn on_mouse_move(&mut self, _: &mut WindowHelper<()>, position: Vector2<f32>) {
         self.mouse_pos = position;
     }
+}
+
+unsafe fn do_tick(is_initial: &mut bool) {
+    if *is_initial {
+        *is_initial = false;
+        initial = grid.clone();
+    }
+    update();
 }
 
 unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
