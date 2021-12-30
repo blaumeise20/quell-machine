@@ -273,7 +273,7 @@ impl WindowHandler for WinHandler {
 
                 VirtualKeyCode::Space => { self.running = !self.running; },
                 VirtualKeyCode::G => { self.running = false; unsafe { do_tick(&mut self.is_initial); } },
-                VirtualKeyCode::T => { if !self.is_initial { unsafe { self.running = false; grid = initial.clone(); } } },
+                VirtualKeyCode::T => { if !self.is_initial { unsafe { self.running = false; self.is_initial = true; grid = initial.clone(); } } },
 
                 VirtualKeyCode::Q => self.direction -= 1,
                 VirtualKeyCode::E => self.direction += 1,
