@@ -12,7 +12,7 @@ pub fn can_move(cell: &Cell, direction: Direction, force: MoveForce) -> bool {
     match cell.id {
         WALL => false,
         SLIDE if cell.direction.shrink(2) != direction.shrink(2) => false,
-        MIRROR if force == MoveForce::Mirror => false,
+        MIRROR if force == MoveForce::Mirror && cell.direction.shrink(2) == direction.shrink(2) => false,
         CROSSMIRROR if force == MoveForce::Mirror => false,
         _ => true,
     }
