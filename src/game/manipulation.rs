@@ -94,7 +94,7 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
                 }
             }
 
-            if cell.id == TRASH || cell.id == ENEMY || force == 0 {
+            if cell.id == TRASH || cell.id == ENEMY || force == 0 || !can_move(cell, dir, MoveForce::Puller) {
                 break;
             }
 
