@@ -89,4 +89,10 @@ celld! {
         sides 1,
         texture "enemy"
     }
+    MIRROR 13: {
+        "Mirror",
+        "Flips the cell in front and behind.",
+        sides 2,
+        texture "mirror"
+    }
 }

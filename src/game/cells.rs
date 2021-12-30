@@ -81,6 +81,12 @@ impl Grid {
         }
     }
 
+    pub fn set_cell(&mut self, x: isize, y: isize, cell: Option<Cell>) {
+        if self.is_in_bounds(x, y) {
+            self.cells[y as usize][x as usize] = cell;
+        }
+    }
+
     pub fn delete(&mut self, x: isize, y: isize) {
         if self.is_in_bounds(x, y) {
             self.cells[y as usize][x as usize] = None;

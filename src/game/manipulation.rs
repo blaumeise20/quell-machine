@@ -1,10 +1,18 @@
 use speedy2d::dimen::Vector2;
 use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR}};
 
-pub fn can_move(cell: &Cell, direction: Direction) -> bool {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum MoveForce {
+    Mover,
+    Puller,
+    Mirror,
+}
+
+pub fn can_move(cell: &Cell, direction: Direction, force: MoveForce) -> bool {
     match cell.id {
         WALL => false,
         SLIDE if cell.direction.shrink(2) != direction.shrink(2) => false,
+        MIRROR if force == MoveForce::Mirror => false,
         _ => true,
     }
 }
@@ -30,7 +38,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
 
             if cell.id == TRASH || cell.id == ENEMY { break; }
 
-            if !can_move(cell, dir) {
+            if !can_move(cell, dir, MoveForce::Mover) {
                 return false;
             }
 
