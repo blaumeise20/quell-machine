@@ -5,7 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER, MOVER, GENERATOR, WALL, PUSH, SLIDE, ENEMY, PULLER, MIRROR, HOTBAR_CELLS}};
+use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{HOTBAR_CELLS, CELL_DATA}};
 
 pub static mut screen_x: f32 = DEFAULT_GRID_WIDTH as f32 / 2.0;
 pub static mut screen_y: f32 = DEFAULT_GRID_HEIGHT as f32 / 2.0;
@@ -18,12 +18,6 @@ pub const CELL_SIZE: f32 = 40.0;
 const CELL_SPEED: f32 = 10.0;
 const HOTBAR_HEIGHT: f32 = 80.0;
 const HOTBAR_CELL_SIZE: f32 = 50.0;
-
-macro_rules! collection {
-    ($($k:expr => $v:expr),* $(,)?) => {{
-        HashMap::from_iter([$(($k, $v),)*].into_iter())
-    }};
-}
 
 pub struct WinHandler {
     assets: Option<Assets>,
@@ -89,17 +83,6 @@ impl WindowHandler for WinHandler {
                     ).unwrap()
                 }
             }
-            macro_rules! cell_img {
-                ($path:literal $amount:literal) => {{
-                    let [tex0, tex1, tex2, tex3] = create_rotated_textures($amount, concat!("assets/cells/", $path, ".png"));
-                    [
-                        g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex0.width(), tex0.height()), &tex0.into_raw()).unwrap(),
-                        g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex1.width(), tex1.height()), &tex1.into_raw()).unwrap(),
-                        g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex2.width(), tex2.height()), &tex2.into_raw()).unwrap(),
-                        g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex3.width(), tex3.height()), &tex3.into_raw()).unwrap(),
-                    ]
-                }}
-            }
 
             let font = Font::new(include_bytes!("../../assets/font.ttf")).unwrap();
 
@@ -114,21 +97,24 @@ impl WindowHandler for WinHandler {
 
             let assets = Assets {
                 cell_bg: img!("assets/background.png"),
-                cells: collection![
-                    WALL => cell_img!("wall" 1),
-                    MOVER => cell_img!("mover" 4),
-                    PULLER => cell_img!("puller" 4),
-                    PULLSHER => cell_img!("pullsher" 4),
-                    GENERATOR => cell_img!("generator" 4),
-                    ROTATOR_CW => cell_img!("rotator_cw" 1),
-                    ROTATOR_CCW => cell_img!("rotator_ccw" 1),
-                    ORIENTATOR => cell_img!("orientator" 4),
-                    PUSH => cell_img!("push" 1),
-                    SLIDE => cell_img!("slide" 2),
-                    TRASH => cell_img!("trash" 1),
-                    ENEMY => cell_img!("enemy" 1),
-                    MIRROR => cell_img!("mirror" 2),
-                ],
+                cells: {
+                    let mut map = HashMap::new();
+                    for cell in CELL_DATA {
+                        let [
+                            tex0,
+                            tex1,
+                            tex2,
+                            tex3,
+                        ] = create_rotated_textures(cell.sides, "assets/cells/".to_string() + cell.texture_name + ".png");
+                        map.insert(cell.id, [
+                            g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex0.width(), tex0.height()), &tex0.into_raw()).unwrap(),
+                            g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex1.width(), tex1.height()), &tex1.into_raw()).unwrap(),
+                            g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex2.width(), tex2.height()), &tex2.into_raw()).unwrap(),
+                            g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex3.width(), tex3.height()), &tex3.into_raw()).unwrap(),
+                        ]);
+                    }
+                    map
+                },
                 font,
             };
 
@@ -386,7 +372,7 @@ struct Assets {
     font: Font,
 }
 
-fn create_rotated_textures(amount: usize, path: &str) -> [ImageBuffer<Rgba<u8>, Vec<u8>>; 4] {
+fn create_rotated_textures(amount: usize, path: String) -> [ImageBuffer<Rgba<u8>, Vec<u8>>; 4] {
     let first_texture = image::open(path).unwrap().to_rgba8();
     let mut textures = [first_texture.clone(), first_texture.clone(), first_texture.clone(), first_texture];
     for (i, img) in textures.iter_mut().enumerate() {

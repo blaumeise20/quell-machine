@@ -13,6 +13,17 @@ macro_rules! celld {
         pub static HOTBAR_CELLS: &[CellType] = &[
             $($id_name, )*
         ];
+        pub static CELL_DATA: &[CellData] = &[
+            $(
+                CellData {
+                    id: $id_name,
+                    name: $name,
+                    description: $description,
+                    sides: $sides,
+                    texture_name: $texture_name,
+                },
+            )*
+        ];
     }
 }
 
@@ -95,4 +106,12 @@ celld! {
         sides 2,
         texture "mirror"
     }
+}
+
+pub struct CellData {
+    pub id: CellType,
+    pub name: &'static str,
+    pub description: &'static str,
+    pub sides: usize,
+    pub texture_name: &'static str,
 }
