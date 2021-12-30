@@ -64,11 +64,11 @@ pub fn import(input: &str) -> Result<(), &'static str> { unsafe {
             count -= 1;
         }
     }
-    let mut cell_arr = cell_arr.into_iter();
+    let cell_arr = cell_arr.into_iter();
 
     let mut x = 0;
     let mut y = 0;
-    while let Some(cell_str) = cell_arr.next() {
+    for cell_str in cell_arr {
         if !cell_str.is_empty() {
             grid.set(x, y, decode_cell(cell_str));
         }
