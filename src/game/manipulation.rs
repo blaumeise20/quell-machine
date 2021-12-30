@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use super::{direction::Direction, cells::{grid, Cell, WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER}};
+use super::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER}};
 
 pub fn can_move(cell: &Cell, direction: Direction) -> bool {
     match cell.id {

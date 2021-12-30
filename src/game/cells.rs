@@ -7,19 +7,6 @@ pub static mut grid: Grid = Grid::new(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
 
 pub type CellType = u16;
 
-pub const WALL: CellType = 1;
-pub const MOVER: CellType = 2;
-pub const PULLER: CellType = 3;
-pub const PULLSHER: CellType = 4;
-pub const GENERATOR: CellType = 5;
-pub const ROTATOR_CW: CellType = 6;
-pub const ROTATOR_CCW: CellType = 7;
-pub const ORIENTATOR: CellType = 8;
-pub const PUSH: CellType = 9;
-pub const SLIDE: CellType = 10;
-pub const TRASH: CellType = 11;
-pub const ENEMY: CellType = 12;
-
 #[derive(Debug, Clone)]
 pub struct Cell {
     pub id: CellType,

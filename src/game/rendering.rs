@@ -5,8 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use crate::game::cells::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER};
-use super::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, MOVER, GENERATOR, Cell, WALL, PUSH, SLIDE, ENEMY, PULLER}, direction::Direction, update::update, codes::{import, export}};
+use super::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell}, direction::Direction, update::update, codes::{import, export}, cell_data::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER, MOVER, GENERATOR, WALL, PUSH, SLIDE, ENEMY, PULLER, HOTBAR_CELLS}};
 
 pub static mut screen_x: f32 = DEFAULT_GRID_WIDTH as f32 / 2.0;
 pub static mut screen_y: f32 = DEFAULT_GRID_HEIGHT as f32 / 2.0;
@@ -73,6 +72,7 @@ impl WindowHandler for WinHandler {
             grid.init();
         }
     }
+
 	fn on_draw(&mut self, helper: &mut WindowHelper, g: &mut Graphics2D) {
         // setup and helper stuff
         if self.assets.is_none() {
@@ -150,21 +150,6 @@ impl WindowHandler for WinHandler {
             draw_grid(assets, g);
 
         // hotbar
-            let hotbar_items = [
-                WALL,
-                MOVER,
-                PULLER,
-                PULLSHER,
-                GENERATOR,
-                ROTATOR_CW,
-                ROTATOR_CCW,
-                ORIENTATOR,
-                PUSH,
-                SLIDE,
-                TRASH,
-                ENEMY,
-            ];
-
             let hotbar_rect = Rectangle::new(
                 Vector2::new(0.0, SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT),
                 Vector2::new(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32),
@@ -177,8 +162,9 @@ impl WindowHandler for WinHandler {
             );
 
             // cells
-            for (i, &cell_type) in hotbar_items.iter().enumerate() {
-                if i == self.active_item { continue; }
+            #[allow(clippy::needless_range_loop)]
+            for i in 0..HOTBAR_CELLS.len() {
+                let cell_type = HOTBAR_CELLS[i];
                 let cell_img = &assets.cells.get(&cell_type).unwrap()[usize::from(self.direction)];
                 let rect = Rectangle::new(
                     Vector2::new(
@@ -194,8 +180,8 @@ impl WindowHandler for WinHandler {
                     rect.clone(),
                     cell_img,
                 );
-                if let Some(MouseButton::Left) = self.mouse {
-                    if is_inside(rect, self.mouse_pos) {
+                if is_inside(rect, self.mouse_pos) {
+                    if let Some(MouseButton::Left) = self.mouse {
                         self.active_item = i;
                     }
                 }
@@ -208,7 +194,7 @@ impl WindowHandler for WinHandler {
             );
 
             // active item
-            let cell_img = &assets.cells.get(&hotbar_items[self.active_item]).unwrap()[usize::from(self.direction)];
+            let cell_img = &assets.cells.get(&HOTBAR_CELLS[self.active_item]).unwrap()[usize::from(self.direction)];
             g.draw_rectangle_image(
                 Rectangle::new(
                     Vector2::new(
@@ -237,7 +223,7 @@ impl WindowHandler for WinHandler {
                 let screen_h_half = SCREEN_HEIGHT / 2.0;
                 let x = (self.mouse_pos.x - screen_w_half) / CELL_SIZE / screen_zoom + screen_x;
                 let y = screen_y - (self.mouse_pos.y - screen_h_half) / CELL_SIZE / screen_zoom;
-                let cell = Cell::new(hotbar_items[self.active_item], self.direction);
+                let cell = Cell::new(HOTBAR_CELLS[self.active_item], self.direction);
                 if let Some(MouseButton::Left) = self.mouse {
                     grid.set(x.floor() as isize, y.floor() as isize, cell);
                 }

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::{grid, MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER}, manipulation::{push, rotate_by, rotate_to, pull}, direction::Direction};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
