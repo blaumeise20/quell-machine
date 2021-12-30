@@ -5,7 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use super::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER, MOVER, GENERATOR, WALL, PUSH, SLIDE, ENEMY, PULLER, HOTBAR_CELLS}};
+use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{ROTATOR_CW, ROTATOR_CCW, ORIENTATOR, TRASH, PULLSHER, MOVER, GENERATOR, WALL, PUSH, SLIDE, ENEMY, PULLER, HOTBAR_CELLS}};
 
 pub static mut screen_x: f32 = DEFAULT_GRID_WIDTH as f32 / 2.0;
 pub static mut screen_y: f32 = DEFAULT_GRID_HEIGHT as f32 / 2.0;
