@@ -133,7 +133,7 @@ impl WindowHandler for WinHandler {
             let start_time = Instant::now();
             unsafe { do_tick(&mut self.is_initial); }
             self.tick_times.rotate_left(1);
-            self.tick_times[9] = start_time.elapsed().as_secs_f32() / 1000.0;
+            self.tick_times[9] = start_time.elapsed().as_secs_f32() * 1000.0;
         }
 
         unsafe {
