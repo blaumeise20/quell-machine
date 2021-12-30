@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR}};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -23,6 +23,7 @@ pub fn update() {
         }
 
         if cells.contains(&MIRROR) { do_mirrors(); }
+        if cells.contains(&CROSSMIRROR) { do_crossmirrors(); }
         if cells.contains(&GENERATOR) { do_gens(); }
         if cells.contains(&ROTATOR_CW) || cells.contains(&ROTATOR_CCW) { do_rotators(); }
         if cells.contains(&ORIENTATOR) { do_orientators(); }
@@ -55,6 +56,43 @@ unsafe fn do_mirrors() {
     grid.for_each_mut(|x, y, cell| {
         if cell.id == MIRROR && cell.direction.shrink(2) == Direction::Down && !cell.updated {
             cell.updated = true;
+            let cell_up = grid.get(x, y + 1);
+            let cell_down = grid.get(x, y - 1);
+            let up_movable = if let Some(cell) = cell_up {
+                can_move(cell, Direction::Down, MoveForce::Mirror)
+            } else { true };
+            let down_movable = if let Some(cell) = cell_down {
+                can_move(cell, Direction::Up, MoveForce::Mirror)
+            } else { true };
+            if up_movable && down_movable {
+                let cell_up = grid.take(x, y + 1);
+                let cell_down = grid.take(x, y - 1);
+                grid.set_cell(x, y + 1, cell_down);
+                grid.set_cell(x, y - 1, cell_up);
+            }
+        }
+    });
+}
+
+unsafe fn do_crossmirrors() {
+    grid.for_each_mut(|x, y, cell| {
+        if cell.id == CROSSMIRROR && !cell.updated {
+            cell.updated = true;
+            let cell_left = grid.get(x - 1, y);
+            let cell_right = grid.get(x + 1, y);
+            let left_movable = if let Some(cell) = cell_left {
+                can_move(cell, Direction::Right, MoveForce::Mirror)
+            } else { true };
+            let right_movable = if let Some(cell) = cell_right {
+                can_move(cell, Direction::Left, MoveForce::Mirror)
+            } else { true };
+            if left_movable && right_movable {
+                let cell_left = grid.take(x - 1, y);
+                let cell_right = grid.take(x + 1, y);
+                grid.set_cell(x - 1, y, cell_right);
+                grid.set_cell(x + 1, y, cell_left);
+            }
+
             let cell_up = grid.get(x, y + 1);
             let cell_down = grid.get(x, y - 1);
             let up_movable = if let Some(cell) = cell_up {

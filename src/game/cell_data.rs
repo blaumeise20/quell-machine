@@ -103,6 +103,12 @@ celld! {
         sides 2,
         texture "mirror"
     }
+    CROSSMIRROR 14: {
+        "Cross-Mirror",
+        "Like mirror but stacked 90 degrees.",
+        sides 1,
+        texture "crossmirror"
+    }
 }
 
 pub struct CellData {
