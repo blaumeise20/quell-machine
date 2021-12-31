@@ -160,7 +160,7 @@ impl WindowHandler for WinHandler {
             // cells
             #[allow(clippy::needless_range_loop)]
             for i in 0..HOTBAR_ITEMS.len() {
-                let cell_img = &assets.cells.get(&HOTBAR_ITEMS[i].id).unwrap()[usize::from(self.direction)];
+                let cell_img = &assets.cells.get(&HOTBAR_ITEMS[i][0].id).unwrap()[usize::from(self.direction)];
                 let rect = Rectangle::new(
                     Vector2::new(
                         (i as f32 * HOTBAR_CELL_SIZE * 1.5) + (HOTBAR_CELL_SIZE / 2.0),
@@ -189,7 +189,7 @@ impl WindowHandler for WinHandler {
             );
 
             // active item
-            let cell_img = &assets.cells.get(&HOTBAR_ITEMS[self.active_item].id).unwrap()[usize::from(self.direction)];
+            let cell_img = &assets.cells.get(&HOTBAR_ITEMS[self.active_item][0].id).unwrap()[usize::from(self.direction)];
             g.draw_rectangle_image(
                 Rectangle::new(
                     Vector2::new(
@@ -218,7 +218,7 @@ impl WindowHandler for WinHandler {
                 let screen_h_half = SCREEN_HEIGHT / 2.0;
                 let x = (self.mouse_pos.x - screen_w_half) / CELL_SIZE / screen_zoom + screen_x;
                 let y = screen_y - (self.mouse_pos.y - screen_h_half) / CELL_SIZE / screen_zoom;
-                let cell = Cell::new(HOTBAR_ITEMS[self.active_item].id, self.direction);
+                let cell = Cell::new(HOTBAR_ITEMS[self.active_item][0].id, self.direction);
                 if let Some(MouseButton::Left) = self.mouse {
                     grid.set(x.floor() as isize, y.floor() as isize, cell);
                 }

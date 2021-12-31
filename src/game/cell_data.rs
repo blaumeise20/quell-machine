@@ -24,9 +24,9 @@ macro_rules! celld {
     }
 }
 macro_rules! hotbar {
-    ($($name:ident),* $(,)?) => {
-        pub static HOTBAR_ITEMS: &[CellData] = &[
-            $(CELL_DATA[($name - 1) as usize], )*
+    ($([$($name:ident),*]),* $(,)?) => {
+        pub static HOTBAR_ITEMS: &[&[CellData]] = &[
+            $( &[ $(CELL_DATA[($name - 1) as usize], )* ], )*
         ];
     };
 }
@@ -125,21 +125,21 @@ celld! {
 }
 
 hotbar![
-    WALL,
-    MOVER,
-    PULLER,
-    PULLSHER,
-    TRASHMOVER,
-    GENERATOR,
-    ROTATOR_CW,
-    ROTATOR_CCW,
-    ORIENTATOR,
-    PUSH,
-    SLIDE,
-    TRASH,
-    ENEMY,
-    MIRROR,
-    CROSSMIRROR,
+    [WALL],
+    [MOVER],
+    [PULLER],
+    [PULLSHER],
+    [TRASHMOVER],
+    [GENERATOR],
+    [ROTATOR_CW],
+    [ROTATOR_CCW],
+    [ORIENTATOR],
+    [PUSH],
+    [SLIDE],
+    [TRASH],
+    [ENEMY],
+    [MIRROR],
+    [CROSSMIRROR],
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
