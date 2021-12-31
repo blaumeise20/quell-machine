@@ -23,6 +23,13 @@ macro_rules! celld {
         ];
     }
 }
+macro_rules! hotbar {
+    ($($name:ident),* $(,)?) => {
+        pub static HOTBAR_ITEMS: &[CellData] = &[
+            $(CELL_DATA[($name - 1) as usize], )*
+        ];
+    };
+}
 
 celld! {
     WALL 1: {
@@ -111,6 +118,24 @@ celld! {
     }
 }
 
+hotbar![
+    WALL,
+    MOVER,
+    PULLER,
+    PULLSHER,
+    GENERATOR,
+    ROTATOR_CW,
+    ROTATOR_CCW,
+    ORIENTATOR,
+    PUSH,
+    SLIDE,
+    TRASH,
+    ENEMY,
+    MIRROR,
+    CROSSMIRROR,
+];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CellData {
     pub id: CellType,
     pub name: &'static str,
