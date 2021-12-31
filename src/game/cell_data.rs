@@ -122,6 +122,12 @@ celld! {
         sides 4,
         texture "trashmover"
     }
+    SPEED 16: {
+        "Speed",
+        "Fast mover but can't push.",
+        sides 4,
+        texture "speed"
+    }
 }
 
 hotbar![
@@ -130,6 +136,7 @@ hotbar![
     [PULLER],
     [PULLSHER],
     [TRASHMOVER],
+    [SPEED],
     [GENERATOR],
     [ROTATOR_CW],
     [ROTATOR_CCW],

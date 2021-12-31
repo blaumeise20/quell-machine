@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER}};
+use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
@@ -28,7 +28,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
 
         let cell = grid.get(tx, ty);
         if let Some(cell) = cell {
-            if cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER {
+            if cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER || cell.id == SPEED {
                 if cell.direction == dir {
                     force += 1;
                 }
@@ -58,7 +58,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
         ty -= oy;
 
         let mut cell = grid.take(tx, ty).unwrap();
-        if (cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER) && cell.direction == dir {
+        if (cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER || cell.id == SPEED) && cell.direction == dir {
             cell.updated = true;
         }
 
@@ -93,7 +93,7 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
     loop {
         let cell = grid.get_mut(cx - ox, cy - oy);
         if let Some(cell) = cell {
-            if cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER {
+            if cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER || cell.id == SPEED {
                 if cell.direction == dir {
                     cell.updated = true;
                     force += 1;
