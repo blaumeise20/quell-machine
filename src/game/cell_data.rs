@@ -2,7 +2,7 @@ use crate::game::cells::CellType;
 
 macro_rules! celld {
     {$(
-        $id_name:ident $id:literal: {
+        $id_name:ident $id:literal {
             $name:literal,
             $description:literal,
             sides $sides:literal,
@@ -32,97 +32,97 @@ macro_rules! hotbar {
 }
 
 celld! {
-    WALL 1: {
+    WALL 1 {
         "Wall",
         "A solid wall that can't be moved by anything.",
         sides 1,
         texture "wall"
     }
-    MOVER 2: {
+    MOVER 2 {
         "Mover",
         "Pushes the cells in front of it.",
         sides 4,
         texture "mover"
     }
-    PULLER 3: {
+    PULLER 3 {
         "Puller",
         "Pulls the cells behind it.",
         sides 4,
         texture "puller"
     }
-    PULLSHER 4: {
+    PULLSHER 4 {
         "Pullsher",
         "Pulls the cells behind it and pushes the cells in front of it.",
         sides 4,
         texture "pullsher"
     }
-    GENERATOR 5: {
+    GENERATOR 5 {
         "Generator",
         "Generates the cell behind to its front.",
         sides 4,
         texture "generator"
     }
-    ROTATOR_CW 6: {
+    ROTATOR_CW 6 {
         "Rotator CW",
         "Rotates all touching cells clockwise.",
         sides 1,
         texture "rotator_cw"
     }
-    ROTATOR_CCW 7: {
+    ROTATOR_CCW 7 {
         "Rotator CCW",
         "Rotates all touching cells counter-clockwise.",
         sides 1,
         texture "rotator_ccw"
     }
-    ORIENTATOR 8: {
+    ORIENTATOR 8 {
         "Orientator",
         "Rotates all touching cells in its own direction.",
         sides 4,
         texture "orientator"
     }
-    PUSH 9: {
+    PUSH 9 {
         "Push",
         "A normal cell that does nothing.",
         sides 1,
         texture "push"
     }
-    SLIDE 10: {
+    SLIDE 10 {
         "Slide",
         "Like push cell but can only be moved in two directions.",
         sides 2,
         texture "slide"
     }
-    TRASH 11: {
+    TRASH 11 {
         "Trash",
         "Trashes all cells that get moved into it.",
         sides 1,
         texture "trash"
     }
-    ENEMY 12: {
+    ENEMY 12 {
         "Enemy",
         "An enemy that moves randomly. *thanks github copilot*",
         sides 1,
         texture "enemy"
     }
-    MIRROR 13: {
+    MIRROR 13 {
         "Mirror",
         "Flips the cell in front and behind.",
         sides 2,
         texture "mirror"
     }
-    CROSSMIRROR 14: {
+    CROSSMIRROR 14 {
         "Cross-Mirror",
         "Like mirror but stacked 90 degrees.",
         sides 1,
         texture "crossmirror"
     }
-    TRASHMOVER 15: {
+    TRASHMOVER 15 {
         "Trash Mover",
         "Like a mover but deletes all cells in front of it.",
         sides 4,
         texture "trashmover"
     }
-    SPEED 16: {
+    SPEED 16 {
         "Speed",
         "Fast mover but can't push.",
         sides 4,
