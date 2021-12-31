@@ -16,8 +16,9 @@ pub static mut SCREEN_HEIGHT: f32 = 600.0;
 
 pub const CELL_SIZE: f32 = 40.0;
 const CELL_SPEED: f32 = 10.0;
-const HOTBAR_HEIGHT: f32 = 80.0;
-const HOTBAR_CELL_SIZE: f32 = 50.0;
+const HOTBAR_HEIGHT: f32 = 90.0;
+const HOTBAR_CELL_SIZE: f32 = HOTBAR_HEIGHT * 0.6;
+const HOTBAR_CELL_SPACING: f32 = (HOTBAR_HEIGHT - HOTBAR_CELL_SIZE) / 2.0;
 
 pub struct WinHandler {
     assets: Option<Assets>,
@@ -29,7 +30,10 @@ pub struct WinHandler {
     help_text: Option<Rc<FormattedTextBlock>>,
 
     active_item: usize,
+    hotbar_state: Vec<usize>,
+    open_item_menu: Option<usize>,
     direction: Direction,
+    place: bool,
 
     running: bool,
     show_help: bool,
@@ -50,7 +54,10 @@ impl WinHandler {
             help_text: None,
 
             active_item: 0,
+            hotbar_state: vec![0; HOTBAR_ITEMS.len()],
+            open_item_menu: None,
             direction: Direction::Right,
+            place: true,
 
             running: false,
             show_help: true,
@@ -154,55 +161,31 @@ impl WindowHandler for WinHandler {
             // background
             g.draw_rectangle(
                 hotbar_rect.clone(),
-                Color::from_hex_argb(0x99aaaaaa),
+                Color::from_hex_argb(0xcfaaaaaa),
             );
 
             // cells
             #[allow(clippy::needless_range_loop)]
             for i in 0..HOTBAR_ITEMS.len() {
-                let cell_img = &assets.cells.get(&HOTBAR_ITEMS[i][0].id).unwrap()[usize::from(self.direction)];
+                let item = HOTBAR_ITEMS[i];
+                let active_cell = item[self.hotbar_state[i]];
+                let cell_img = &assets.cells.get(&active_cell.id).unwrap()[usize::from(self.direction)];
                 let rect = Rectangle::new(
                     Vector2::new(
-                        (i as f32 * HOTBAR_CELL_SIZE * 1.5) + (HOTBAR_CELL_SIZE / 2.0),
-                        SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT + (HOTBAR_HEIGHT - HOTBAR_CELL_SIZE) / 2.0,
+                        i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING,
+                        SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT + HOTBAR_CELL_SPACING,
                     ),
                     Vector2::new(
-                        (i as f32 * HOTBAR_CELL_SIZE * 1.5) + (HOTBAR_CELL_SIZE / 2.0) + HOTBAR_CELL_SIZE,
-                        SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT + (HOTBAR_HEIGHT + HOTBAR_CELL_SIZE) / 2.0,
+                        i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING,
+                        SCREEN_HEIGHT as f32 - HOTBAR_CELL_SPACING,
                     ),
                 );
-                g.draw_rectangle_image(
-                    rect.clone(),
+                g.draw_rectangle_image_tinted(
+                    rect,
+                    Color::from_hex_argb(if self.active_item == i { 0xffffffff } else { 0x70ffffff }),
                     cell_img,
                 );
-                if is_inside(rect, self.mouse_pos) {
-                    if let Some(MouseButton::Left) = self.mouse {
-                        self.active_item = i;
-                    }
-                }
             }
-
-            // make cells lighter
-            g.draw_rectangle(
-                hotbar_rect.clone(),
-                Color::from_hex_argb(0x88aaaaaa),
-            );
-
-            // active item
-            let cell_img = &assets.cells.get(&HOTBAR_ITEMS[self.active_item][0].id).unwrap()[usize::from(self.direction)];
-            g.draw_rectangle_image(
-                Rectangle::new(
-                    Vector2::new(
-                        (self.active_item as f32 * HOTBAR_CELL_SIZE * 1.5) + (HOTBAR_CELL_SIZE / 2.0),
-                        SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT + (HOTBAR_HEIGHT - HOTBAR_CELL_SIZE) / 2.0,
-                    ),
-                    Vector2::new(
-                        (self.active_item as f32 * HOTBAR_CELL_SIZE * 1.5) + (HOTBAR_CELL_SIZE / 2.0) + HOTBAR_CELL_SIZE,
-                        SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT + (HOTBAR_HEIGHT + HOTBAR_CELL_SIZE) / 2.0,
-                    ),
-                ),
-                cell_img,
-            );
 
             // top border
             g.draw_line(
@@ -212,13 +195,36 @@ impl WindowHandler for WinHandler {
                 Color::DARK_GRAY,
             );
 
+            // open item menu
+            if let Some(i1) = self.open_item_menu {
+                let img_x = i1 as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING;
+                for i2 in 0..HOTBAR_ITEMS[i1].len() {
+                    let cell_img = &assets.cells.get(&HOTBAR_ITEMS[i1][i2].id).unwrap()[usize::from(self.direction)];
+                    let rect = Rectangle::new(
+                        Vector2::new(
+                            img_x,
+                            SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                        ),
+                        Vector2::new(
+                            img_x + HOTBAR_CELL_SIZE,
+                            SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                        ),
+                    );
+                    g.draw_rectangle_image_tinted(
+                        rect.clone(),
+                        Color::from_hex_argb(if self.hotbar_state[i1] == i2 { 0xffffffff } else { 0x7fffffff }),
+                        cell_img,
+                    );
+                }
+            }
+
         // placing
-            if !is_inside(hotbar_rect, self.mouse_pos) {
+            if self.place && !is_inside(hotbar_rect, self.mouse_pos) {
                 let screen_w_half = SCREEN_WIDTH / 2.0;
                 let screen_h_half = SCREEN_HEIGHT / 2.0;
                 let x = (self.mouse_pos.x - screen_w_half) / CELL_SIZE / screen_zoom + screen_x;
                 let y = screen_y - (self.mouse_pos.y - screen_h_half) / CELL_SIZE / screen_zoom;
-                let cell = Cell::new(HOTBAR_ITEMS[self.active_item][0].id, self.direction);
+                let cell = Cell::new(HOTBAR_ITEMS[self.active_item][self.hotbar_state[self.active_item]].id, self.direction);
                 if let Some(MouseButton::Left) = self.mouse {
                     grid.set(x.floor() as isize, y.floor() as isize, cell);
                 }
@@ -308,8 +314,57 @@ impl WindowHandler for WinHandler {
 
     fn on_mouse_button_down(&mut self, _: &mut WindowHelper<()>, button: MouseButton) {
         self.mouse = Some(button);
+
+        unsafe {
+            #[allow(clippy::needless_range_loop)]
+            for i in 0..HOTBAR_ITEMS.len() {
+                let rect = Rectangle::new(
+                    Vector2::new(
+                        i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING,
+                        SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT + HOTBAR_CELL_SPACING,
+                    ),
+                    Vector2::new(
+                        i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING,
+                        SCREEN_HEIGHT as f32 - HOTBAR_CELL_SPACING,
+                    ),
+                );
+                if is_inside(rect, self.mouse_pos) {
+                    if button == MouseButton::Left {
+                        self.active_item = i;
+                        self.open_item_menu = None;
+                    }
+                    else if button == MouseButton::Right {
+                        self.active_item = i;
+                        self.open_item_menu = Some(i);
+                    }
+                }
+            }
+
+            if let Some(i1) = self.open_item_menu {
+                let img_x = i1 as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING;
+                for i2 in 0..HOTBAR_ITEMS[i1].len() {
+                    let rect = Rectangle::new(
+                        Vector2::new(
+                            img_x,
+                            SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                        ),
+                        Vector2::new(
+                            img_x + HOTBAR_CELL_SIZE,
+                            SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                        ),
+                    );
+                    if is_inside(rect, self.mouse_pos) && button == MouseButton::Left {
+                        self.hotbar_state[i1] = i2;
+                        self.open_item_menu = None;
+                        self.place = false;
+                    }
+                }
+            }
+        }
+
     }
     fn on_mouse_button_up(&mut self, _: &mut WindowHelper<()>, _: MouseButton) {
+        self.place = true;
         self.mouse = None;
     }
     fn on_mouse_move(&mut self, _: &mut WindowHelper<()>, position: Vector2<f32>) {
@@ -326,7 +381,6 @@ unsafe fn do_tick(is_initial: &mut bool) {
 }
 
 unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
-
     // calculate visible cells
     let screen_w_half = SCREEN_WIDTH / 2.0;
     let screen_h_half = SCREEN_HEIGHT / 2.0;

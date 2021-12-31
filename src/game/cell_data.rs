@@ -132,21 +132,12 @@ celld! {
 
 hotbar![
     [WALL],
-    [MOVER],
-    [PULLER],
-    [PULLSHER],
-    [TRASHMOVER],
-    [SPEED],
+    [MOVER, PULLER, PULLSHER, TRASHMOVER, SPEED],
     [GENERATOR],
-    [ROTATOR_CW],
-    [ROTATOR_CCW],
-    [ORIENTATOR],
-    [PUSH],
-    [SLIDE],
-    [TRASH],
-    [ENEMY],
-    [MIRROR],
-    [CROSSMIRROR],
+    [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
+    [PUSH, SLIDE],
+    [TRASH, ENEMY],
+    [MIRROR, CROSSMIRROR],
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
