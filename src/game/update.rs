@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR}};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -29,6 +29,7 @@ pub fn update() {
         if cells.contains(&ORIENTATOR) { do_orientators(); }
         if cells.contains(&PULLSHER) { do_pullshers(); }
         if cells.contains(&PULLER) { do_pullers(); }
+        if cells.contains(&TRASHMOVER) { do_trashmovers(); }
         if cells.contains(&MOVER) { do_movers(); }
     }
 }
@@ -188,6 +189,24 @@ unsafe fn do_pullers() {
                 if grid.get(x + off.x, y + off.y).is_none() {
                     pull(x, y, dir);
                 }
+            }
+        });
+    }
+}
+
+unsafe fn do_trashmovers() {
+    for dir in UPDATE_DIRECTIONS {
+        grid.for_each_dir(dir, |x, y, cell| {
+            if cell.id == TRASHMOVER && cell.direction == dir && !cell.updated {
+                cell.updated = true;
+                let off = cell.direction.to_vector();
+                if let Some(pushed) = grid.get(x + off.x, y + off.y) {
+                    if !can_move(pushed, cell.direction, MoveForce::Mover) {
+                        return;
+                    }
+                }
+                grid.delete(x + off.x, y + off.y);
+                push(x, y, dir, 0, None);
             }
         });
     }

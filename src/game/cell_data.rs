@@ -116,6 +116,12 @@ celld! {
         sides 1,
         texture "crossmirror"
     }
+    TRASHMOVER 15: {
+        "Trash Mover",
+        "Like a mover but deletes all cells in front of it.",
+        sides 4,
+        texture "trashmover"
+    }
 }
 
 hotbar![
@@ -123,6 +129,7 @@ hotbar![
     MOVER,
     PULLER,
     PULLSHER,
+    TRASHMOVER,
     GENERATOR,
     ROTATOR_CW,
     ROTATOR_CCW,
