@@ -128,6 +128,12 @@ celld! {
         sides 4,
         texture "speed"
     }
+    MOVLER 17 {
+        "Movler",
+        "Very weird combination of mover and puller. Doesn't push or pull but increases force when being pushed or pulled.",
+        sides 4,
+        texture "movler"
+    }
 }
 
 hotbar![
