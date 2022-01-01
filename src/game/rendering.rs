@@ -16,9 +16,16 @@ pub static mut SCREEN_HEIGHT: f32 = 600.0;
 
 pub const CELL_SIZE: f32 = 40.0;
 const CELL_SPEED: f32 = 10.0;
+
 const HOTBAR_HEIGHT: f32 = 90.0;
 const HOTBAR_CELL_SIZE: f32 = HOTBAR_HEIGHT * 0.6;
 const HOTBAR_CELL_SPACING: f32 = (HOTBAR_HEIGHT - HOTBAR_CELL_SIZE) / 2.0;
+
+const TOOLTIP_WIDTH: f32 = 400.0;
+const TOOLTIP_HEIGHT: f32 = 200.0;
+const TOOLTIP_PADDING: f32 = 20.0;
+
+type Text = Rc<FormattedTextBlock>;
 
 pub struct WinHandler {
     assets: Option<Assets>,
@@ -27,7 +34,8 @@ pub struct WinHandler {
     mouse: Option<MouseButton>,
     mouse_pos: Vector2<f32>,
 
-    help_text: Option<Rc<FormattedTextBlock>>,
+    help_text: Option<Text>,
+    hotbar_item_text: Option<HashMap<CellType, (Text, Text)>>,
 
     active_item: usize,
     hotbar_state: Vec<usize>,
@@ -52,6 +60,7 @@ impl WinHandler {
             mouse_pos: Vector2::new(0.0, 0.0),
 
             help_text: None,
+            hotbar_item_text: None,
 
             active_item: 0,
             hotbar_state: vec![0; HOTBAR_ITEMS.len()],
@@ -100,6 +109,25 @@ impl WindowHandler for WinHandler {
                     TextOptions::new()
                         .with_wrap_to_width(SCREEN_WIDTH, TextAlignment::Center)
                 ));
+
+                self.hotbar_item_text = Some(HOTBAR_ITEMS.iter().flat_map(|a| {
+                    a.iter().map(|cell_type| {
+                        (cell_type.id, (
+                            font.layout_text(
+                                cell_type.name,
+                                HOTBAR_CELL_SIZE / 1.5,
+                                TextOptions::new()
+                                    .with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left)
+                            ),
+                            font.layout_text(
+                                cell_type.description,
+                                HOTBAR_CELL_SIZE / 2.0,
+                                TextOptions::new()
+                                    .with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left)
+                            ),
+                        ))
+                    })
+                }).collect());
             }
 
             let assets = Assets {
@@ -199,7 +227,8 @@ impl WindowHandler for WinHandler {
             if let Some(i1) = self.open_item_menu {
                 let img_x = i1 as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING;
                 for i2 in 0..HOTBAR_ITEMS[i1].len() {
-                    let cell_img = &assets.cells.get(&HOTBAR_ITEMS[i1][i2].id).unwrap()[usize::from(self.direction)];
+                    let id = HOTBAR_ITEMS[i1][i2].id;
+                    let cell_img = &assets.cells.get(&id).unwrap()[usize::from(self.direction)];
                     let rect = Rectangle::new(
                         Vector2::new(
                             img_x,
@@ -215,6 +244,10 @@ impl WindowHandler for WinHandler {
                         Color::from_hex_argb(if self.hotbar_state[i1] == i2 { 0xffffffff } else { 0x7fffffff }),
                         cell_img,
                     );
+                    if is_inside(rect.clone(), self.mouse_pos) {
+                        let position = rect.top_right() + Vector2::new(HOTBAR_CELL_SPACING, 0.0);
+                        draw_tooltip(g, position, self.hotbar_item_text.as_ref().unwrap().get(&id).unwrap());
+                    }
                 }
             }
 
@@ -416,6 +449,26 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
             }
         }
     }
+}
+
+fn draw_tooltip(g: &mut Graphics2D, pos: Vector2<f32>, (name, description): &(Text, Text)) {
+    let rect = Rectangle::new(
+        pos,
+        pos + Vector2::new(TOOLTIP_WIDTH, TOOLTIP_HEIGHT)
+    );
+    g.draw_rectangle(
+        rect,
+        Color::from_hex_argb(0xaa555555));
+    g.draw_text(
+        pos + Vector2::new(TOOLTIP_PADDING, TOOLTIP_PADDING),
+        Color::WHITE,
+        name
+    );
+    g.draw_text(
+        pos + Vector2::new(TOOLTIP_PADDING, TOOLTIP_PADDING + name.height()),
+        Color::WHITE,
+        description
+    );
 }
 
 struct Assets {
