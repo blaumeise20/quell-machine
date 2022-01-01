@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER}};
+use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
@@ -12,6 +12,7 @@ pub fn can_move(cell: &Cell, direction: Direction, force: MoveForce) -> bool {
     match cell.id {
         WALL => false,
         SLIDE if cell.direction.shrink(2) != direction.shrink(2) => false,
+        ONE_DIR if cell.direction != direction => false,
         MIRROR if force == MoveForce::Mirror && cell.direction.shrink(2) == direction.shrink(2) => false,
         CROSSMIRROR if force == MoveForce::Mirror => false,
         _ => true,

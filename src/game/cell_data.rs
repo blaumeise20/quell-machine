@@ -134,6 +134,12 @@ celld! {
         sides 4,
         texture "movler"
     }
+    ONE_DIR 18 {
+        "One Dir",
+        "A cell that can only be moved in one direction.",
+        sides 4,
+        texture "one_dir"
+    }
 }
 
 hotbar![
@@ -141,7 +147,7 @@ hotbar![
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, SPEED],
     [GENERATOR],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
-    [PUSH, SLIDE],
+    [PUSH, SLIDE, ONE_DIR],
     [TRASH, ENEMY],
     [MIRROR, CROSSMIRROR],
 ];
