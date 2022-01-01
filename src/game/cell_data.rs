@@ -140,6 +140,12 @@ celld! {
         sides 4,
         texture "one_dir"
     }
+    SLIDE_WALL 19 {
+        "Slide Wall",
+        "Like slide but can't be rotated from unmovable sides.",
+        sides 2,
+        texture "slide_wall"
+    }
 }
 
 hotbar![
@@ -147,7 +153,7 @@ hotbar![
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, SPEED],
     [GENERATOR],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
-    [PUSH, SLIDE, ONE_DIR],
+    [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY],
     [MIRROR, CROSSMIRROR],
 ];

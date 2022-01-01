@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR}};
+use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
@@ -11,7 +11,7 @@ pub enum MoveForce {
 pub fn can_move(cell: &Cell, direction: Direction, force: MoveForce) -> bool {
     match cell.id {
         WALL => false,
-        SLIDE if cell.direction.shrink(2) != direction.shrink(2) => false,
+        SLIDE | SLIDE_WALL if cell.direction.shrink(2) != direction.shrink(2) => false,
         ONE_DIR if cell.direction != direction => false,
         MIRROR if force == MoveForce::Mirror && cell.direction.shrink(2) == direction.shrink(2) => false,
         CROSSMIRROR if force == MoveForce::Mirror => false,
@@ -119,17 +119,18 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
     }
 } }
 
-pub fn can_rotate(cell: &Cell) -> bool {
+pub fn can_rotate(cell: &Cell, side: Direction) -> bool {
     #[allow(clippy::match_like_matches_macro)]
     match cell.id {
         WALL => false,
         ORIENTATOR => false,
+        SLIDE_WALL if (cell.direction - side).shrink(2) == Direction::Down => false,
         _ => true,
     }
 }
 
-unsafe fn rotate(cell: &mut Cell, dir: Direction) -> bool {
-    if can_rotate(cell) {
+unsafe fn rotate(cell: &mut Cell, dir: Direction, side: Direction) -> bool {
+    if can_rotate(cell, side) { // TODO: add real side
         cell.direction = dir;
         true
     }
@@ -138,20 +139,20 @@ unsafe fn rotate(cell: &mut Cell, dir: Direction) -> bool {
     }
 }
 
-pub fn rotate_by(x: isize, y: isize, dir: Direction) -> bool { unsafe {
+pub fn rotate_by(x: isize, y: isize, dir: Direction, side: Direction) -> bool { unsafe {
     let cell = grid.get_mut(x, y);
     if let Some(cell) = cell {
-        rotate(cell, cell.direction + dir)
+        rotate(cell, cell.direction + dir, side)
     }
     else {
         false
     }
 } }
 
-pub fn rotate_to(x: isize, y: isize, dir: Direction) -> bool { unsafe {
+pub fn rotate_to(x: isize, y: isize, dir: Direction, side: Direction) -> bool { unsafe {
     let cell = grid.get_mut(x, y);
     if let Some(cell) = cell {
-        rotate(cell, dir)
+        rotate(cell, dir, side)
     }
     else {
         false

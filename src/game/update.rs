@@ -139,17 +139,17 @@ unsafe fn do_rotators() {
         if !cell.updated {
             if cell.id == ROTATOR_CW {
                 cell.updated = true;
-                rotate_by(x + 1, y, Direction::Down);
-                rotate_by(x, y - 1, Direction::Down);
-                rotate_by(x - 1, y, Direction::Down);
-                rotate_by(x, y + 1, Direction::Down);
+                rotate_by(x + 1, y, Direction::Down, Direction::Left);
+                rotate_by(x, y - 1, Direction::Down, Direction::Up);
+                rotate_by(x - 1, y, Direction::Down, Direction::Right);
+                rotate_by(x, y + 1, Direction::Down, Direction::Down);
             }
             else if cell.id == ROTATOR_CCW {
                 cell.updated = true;
-                rotate_by(x + 1, y, Direction::Up);
-                rotate_by(x, y - 1, Direction::Up);
-                rotate_by(x - 1, y, Direction::Up);
-                rotate_by(x, y + 1, Direction::Up);
+                rotate_by(x + 1, y, Direction::Up, Direction::Left);
+                rotate_by(x, y - 1, Direction::Up, Direction::Up);
+                rotate_by(x - 1, y, Direction::Up, Direction::Right);
+                rotate_by(x, y + 1, Direction::Up, Direction::Down);
             }
         }
     });
@@ -159,10 +159,10 @@ unsafe fn do_orientators() {
     grid.for_each_mut(|x, y, cell| {
         if cell.id == ORIENTATOR && !cell.updated {
             cell.updated = true;
-            rotate_to(x + 1, y, cell.direction);
-            rotate_to(x, y - 1, cell.direction);
-            rotate_to(x - 1, y, cell.direction);
-            rotate_to(x, y + 1, cell.direction);
+            rotate_to(x + 1, y, cell.direction, Direction::Left);
+            rotate_to(x, y - 1, cell.direction, Direction::Up);
+            rotate_to(x - 1, y, cell.direction, Direction::Right);
+            rotate_to(x, y + 1, cell.direction, Direction::Down);
         }
     });
 }
