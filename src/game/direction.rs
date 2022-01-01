@@ -162,7 +162,7 @@ impl Sub for Direction {
 
     #[inline(always)]
 	fn sub(self, rhs: Self) -> Self::Output {
-		((u8::from(self) - u8::from(rhs)) & 3).into()
+		(((u8::from(self) as i8 - u8::from(rhs) as i8) & 3) as u8).into()
 	}
 }
 
