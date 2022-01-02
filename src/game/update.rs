@@ -115,19 +115,13 @@ unsafe fn do_crossmirrors() {
 
 unsafe fn do_gens() {
     for dir in UPDATE_DIRECTIONS {
+        let push_offset = dir.to_vector();
+        let cell_offset = dir.flip().to_vector();
         grid.for_each_dir(dir, |x, y, cell| {
             if cell.id == GENERATOR && cell.direction == dir && !cell.updated {
                 cell.updated = true;
-                let push_offset = cell.direction.to_vector();
-                let px = x + push_offset.x;
-                let py = y + push_offset.y;
-
-                let cell_offset = cell.direction.flip().to_vector();
-                let cx = x + cell_offset.x;
-                let cy = y + cell_offset.y;
-
-                if let Some(cell) = grid.get(cx, cy) {
-                    push(px, py, dir, 1, Some(cell.copy()));
+                if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
+                    push(x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()));
                 }
             }
         });
