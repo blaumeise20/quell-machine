@@ -46,6 +46,26 @@ impl Direction {
 		}
 	}
 
+    #[inline]
+    pub fn rotate_left(self) -> Direction {
+        match self {
+            Direction::Right => Direction::Up,
+            Direction::Down => Direction::Right,
+            Direction::Left => Direction::Down,
+            Direction::Up => Direction::Left,
+        }
+    }
+
+    #[inline]
+    pub fn rotate_right(self) -> Direction {
+        match self {
+            Direction::Right => Direction::Down,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+            Direction::Up => Direction::Right,
+        }
+    }
+
     #[inline(always)]
     pub fn shrink(self, radius: u8) -> Direction {
         self % radius

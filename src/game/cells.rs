@@ -109,6 +109,7 @@ impl Grid {
             }
         }
     }
+
     pub fn for_each_mut(&mut self, mut f: impl FnMut(isize, isize, &mut Cell)) {
         for y in 0..self.height {
             for x in 0..self.width {
