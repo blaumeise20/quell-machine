@@ -39,39 +39,27 @@ unsafe fn do_mirrors() {
     grid.for_each_mut(|x, y, cell| {
         if cell.id == MIRROR && cell.direction.shrink(2) == Direction::Right && !cell.updated {
             cell.updated = true;
-            let cell_left = grid.get(x - 1, y);
-            let cell_right = grid.get(x + 1, y);
-            let left_movable = if let Some(cell) = cell_left {
-                can_move(cell, Direction::Right, MoveForce::Mirror)
-            } else { true };
-            let right_movable = if let Some(cell) = cell_right {
-                can_move(cell, Direction::Left, MoveForce::Mirror)
-            } else { true };
-            if left_movable && right_movable {
-                let cell_left = grid.take(x - 1, y);
-                let cell_right = grid.take(x + 1, y);
-                grid.set_cell(x - 1, y, cell_right);
-                grid.set_cell(x + 1, y, cell_left);
-            }
+            let cell_left = grid.get_mut(x - 1, y);
+            let cell_right = grid.get_mut(x + 1, y);
+            if let Some(cell) = cell_left { if !can_move(cell, Direction::Right, MoveForce::Mirror) { return; } }
+            if let Some(cell) = cell_right { if !can_move(cell, Direction::Left, MoveForce::Mirror) { return; } }
+
+            let cell_left = cell_left.take();
+            grid.set_cell(x - 1, y, cell_right.take());
+            grid.set_cell(x + 1, y, cell_left);
         }
     });
     grid.for_each_mut(|x, y, cell| {
         if cell.id == MIRROR && cell.direction.shrink(2) == Direction::Down && !cell.updated {
             cell.updated = true;
-            let cell_up = grid.get(x, y + 1);
-            let cell_down = grid.get(x, y - 1);
-            let up_movable = if let Some(cell) = cell_up {
-                can_move(cell, Direction::Down, MoveForce::Mirror)
-            } else { true };
-            let down_movable = if let Some(cell) = cell_down {
-                can_move(cell, Direction::Up, MoveForce::Mirror)
-            } else { true };
-            if up_movable && down_movable {
-                let cell_up = grid.take(x, y + 1);
-                let cell_down = grid.take(x, y - 1);
-                grid.set_cell(x, y + 1, cell_down);
-                grid.set_cell(x, y - 1, cell_up);
-            }
+            let cell_up = grid.get_mut(x, y + 1);
+            let cell_down = grid.get_mut(x, y - 1);
+            if let Some(cell) = cell_up { if !can_move(cell, Direction::Down, MoveForce::Mirror) { return; } }
+            if let Some(cell) = cell_down { if !can_move(cell, Direction::Up, MoveForce::Mirror) { return; } }
+
+            let cell_up = cell_up.take();
+            grid.set_cell(x, y + 1, cell_down.take());
+            grid.set_cell(x, y - 1, cell_up);
         }
     });
 }
@@ -80,8 +68,8 @@ unsafe fn do_crossmirrors() {
     grid.for_each_mut(|x, y, cell| {
         if cell.id == CROSSMIRROR && !cell.updated {
             cell.updated = true;
-            let cell_left = grid.get(x - 1, y);
-            let cell_right = grid.get(x + 1, y);
+            let cell_left = grid.get_mut(x - 1, y);
+            let cell_right = grid.get_mut(x + 1, y);
             let left_movable = if let Some(cell) = cell_left {
                 can_move(cell, Direction::Right, MoveForce::Mirror)
             } else { true };
@@ -89,9 +77,8 @@ unsafe fn do_crossmirrors() {
                 can_move(cell, Direction::Left, MoveForce::Mirror)
             } else { true };
             if left_movable && right_movable {
-                let cell_left = grid.take(x - 1, y);
-                let cell_right = grid.take(x + 1, y);
-                grid.set_cell(x - 1, y, cell_right);
+                let cell_left = cell_left.take();
+                grid.set_cell(x - 1, y, cell_right.take());
                 grid.set_cell(x + 1, y, cell_left);
             }
 
@@ -105,8 +92,7 @@ unsafe fn do_crossmirrors() {
             } else { true };
             if up_movable && down_movable {
                 let cell_up = grid.take(x, y + 1);
-                let cell_down = grid.take(x, y - 1);
-                grid.set_cell(x, y + 1, cell_down);
+                grid.set_cell(x, y + 1, grid.take(x, y - 1));
                 grid.set_cell(x, y - 1, cell_up);
             }
         }
