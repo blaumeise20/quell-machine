@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED}};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -25,6 +25,7 @@ pub fn update() {
         if cells.contains(&MIRROR) { do_mirrors(); }
         if cells.contains(&CROSSMIRROR) { do_crossmirrors(); }
         if cells.contains(&GENERATOR) { do_gens(); }
+        if cells.contains(&GENERATOR_CW) || cells.contains(&GENERATOR_CCW) { do_angled_gens(); }
         if cells.contains(&ROTATOR_CW) || cells.contains(&ROTATOR_CCW) { do_rotators(); }
         if cells.contains(&ORIENTATOR) { do_orientators(); }
         if cells.contains(&PULLSHER) { do_pullshers(); }
@@ -108,6 +109,45 @@ unsafe fn do_gens() {
                 cell.updated = true;
                 if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
                     push(x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()));
+                }
+            }
+        });
+    }
+}
+
+unsafe fn do_angled_gens() {
+    for dir in UPDATE_DIRECTIONS {
+        grid.for_each_dir(dir, |x, y, cell| {
+            if cell.id == GENERATOR_CW && cell.direction == dir && !cell.updated {
+                cell.updated = true;
+                let push_offset = dir.rotate_right().to_vector();
+                let px = x + push_offset.x;
+                let py = y + push_offset.y;
+
+                let cell_offset = dir.flip().to_vector();
+                let cx = x + cell_offset.x;
+                let cy = y + cell_offset.y;
+
+                if let Some(cell) = grid.get(cx, cy) {
+                    let mut cell = cell.copy();
+                    cell.direction = cell.direction.rotate_right();
+                    push(px, py, dir.rotate_right(), 1, Some(cell));
+                }
+            }
+            else if cell.id == GENERATOR_CCW && cell.direction == dir && !cell.updated {
+                cell.updated = true;
+                let push_offset = dir.rotate_left().to_vector();
+                let px = x + push_offset.x;
+                let py = y + push_offset.y;
+
+                let cell_offset = dir.flip().to_vector();
+                let cx = x + cell_offset.x;
+                let cy = y + cell_offset.y;
+
+                if let Some(cell) = grid.get(cx, cy) {
+                    let mut cell = cell.copy();
+                    cell.direction = cell.direction.rotate_left();
+                    push(px, py, dir.rotate_left(), 1, Some(cell));
                 }
             }
         });

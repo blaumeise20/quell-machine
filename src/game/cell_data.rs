@@ -146,12 +146,24 @@ celld! {
         sides 2,
         texture "slide_wall"
     }
+    GENERATOR_CW 20 {
+        "Generator CW",
+        "Like generator but rotates to it's right side.",
+        sides 4,
+        texture "generator_cw"
+    }
+    GENERATOR_CCW 21 {
+        "Generator CCW",
+        "Like generator but rotates to it's left side.",
+        sides 4,
+        texture "generator_ccw"
+    }
 }
 
 hotbar![
     [WALL],
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, SPEED],
-    [GENERATOR],
+    [GENERATOR, GENERATOR_CW, GENERATOR_CCW],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY],
