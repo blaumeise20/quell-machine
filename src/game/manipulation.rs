@@ -19,6 +19,15 @@ pub fn can_move(cell: &Cell, direction: Direction, force: MoveForce) -> bool {
     }
 }
 
+#[inline]
+pub fn is_trash(cell: &Cell, direction: Direction) -> bool {
+    match cell.id {
+        TRASH | ENEMY => true,
+        TRASHMOVER if cell.direction == direction.flip() => true,
+        _ => false,
+    }
+}
+
 pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>) -> bool { unsafe {
     let mut tx = x;
     let mut ty = y;
@@ -38,7 +47,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
                 }
             }
 
-            if cell.id == TRASH || cell.id == ENEMY { break; }
+            if is_trash(cell, dir) { break; }
 
             if !can_move(cell, dir, MoveForce::Mover) {
                 return false;
@@ -64,13 +73,13 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
         }
 
         if let Some(cell) = grid.get(tx + ox, ty + oy) {
-            if cell.id == TRASH {
-                // cell is trashed
-                continue;
-            }
-            else if cell.id == ENEMY {
+            if cell.id == ENEMY {
                 // cell is deleted and enemy destroyed
                 grid.delete(tx + ox, ty + oy);
+                continue;
+            }
+            else if is_trash(cell, dir) {
+                // cell is trashed
                 continue;
             }
         }
@@ -104,7 +113,7 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
                 }
             }
 
-            if cell.id == TRASH || cell.id == ENEMY || force == 0 || !can_move(cell, dir, MoveForce::Puller) {
+            if is_trash(cell, dir) || force == 0 || !can_move(cell, dir, MoveForce::Puller) {
                 break;
             }
 
@@ -129,8 +138,9 @@ pub fn can_rotate(cell: &Cell, side: Direction) -> bool {
     }
 }
 
+#[inline]
 unsafe fn rotate(cell: &mut Cell, dir: Direction, side: Direction) -> bool {
-    if can_rotate(cell, side) { // TODO: add real side
+    if can_rotate(cell, side) {
         cell.direction = dir;
         true
     }
