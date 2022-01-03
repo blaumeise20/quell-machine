@@ -8,6 +8,8 @@ pub static mut initial: Grid = Grid::new(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT
 
 pub type CellType = u16;
 
+static mut DUMMY_CELL: Option<Cell> = None;
+
 #[derive(Debug, Clone)]
 pub struct Cell {
     pub id: CellType,
@@ -57,21 +59,21 @@ impl Grid {
         x >= 0 && y >= 0 && (x as usize) < self.width && (y as usize) < self.height
     }
 
-    pub fn get(&self, x: isize, y: isize) -> Option<&Cell> {
+    pub fn get(&self, x: isize, y: isize) -> &Option<Cell> {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize][x as usize].as_ref()
+            &self.cells[y as usize][x as usize]
         }
         else {
-            None
+            &None
         }
     }
 
-    pub fn get_mut(&mut self, x: isize, y: isize) -> Option<&mut Cell> {
+    pub fn get_mut(&mut self, x: isize, y: isize) -> &mut Option<Cell> {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize][x as usize].as_mut()
+            &mut self.cells[y as usize][x as usize]
         }
         else {
-            None
+            unsafe { &mut DUMMY_CELL }
         }
     }
 
