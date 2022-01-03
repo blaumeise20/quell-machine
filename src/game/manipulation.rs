@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL}};
+use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL, TRASHPULLER}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
@@ -24,6 +24,7 @@ pub fn is_trash(cell: &Cell, direction: Direction) -> bool {
     match cell.id {
         TRASH | ENEMY => true,
         TRASHMOVER if cell.direction == direction.flip() => true,
+        TRASHPULLER if cell.direction == direction => true,
         _ => false,
     }
 }
@@ -95,6 +96,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
 } }
 
 pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
+    let opposite_dir = dir.flip();
     let Vector2 { x: ox, y: oy } = dir.to_vector();
     let mut cx = x + ox;
     let mut cy = y + oy;
@@ -113,7 +115,7 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
                 }
             }
 
-            if is_trash(cell, dir) || force == 0 || !can_move(cell, dir, MoveForce::Puller) {
+            if is_trash(cell, opposite_dir) || force == 0 || !can_move(cell, dir, MoveForce::Puller) {
                 break;
             }
 

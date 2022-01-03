@@ -158,11 +158,17 @@ celld! {
         sides 4,
         texture "generator_ccw"
     }
+    TRASHPULLER 22 {
+        "Trash Puller",
+        "Tries to trash the cell behind it, then moves.",
+        sides 4,
+        texture "trashpuller"
+    }
 }
 
 hotbar![
     [WALL],
-    [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, SPEED],
+    [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, TRASHPULLER, SPEED],
     [GENERATOR, GENERATOR_CW, GENERATOR_CCW],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],

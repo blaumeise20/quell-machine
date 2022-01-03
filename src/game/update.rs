@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW}};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -29,6 +29,7 @@ pub fn update() {
         if cells.contains(&ROTATOR_CW) || cells.contains(&ROTATOR_CCW) { do_rotators(); }
         if cells.contains(&ORIENTATOR) { do_orientators(); }
         if cells.contains(&PULLSHER) { do_pullshers(); }
+        if cells.contains(&TRASHPULLER) { do_trashpullers(); }
         if cells.contains(&PULLER) { do_pullers(); }
         if cells.contains(&TRASHMOVER) { do_trashmovers(); }
         if cells.contains(&MOVER) { do_movers(); }
@@ -181,6 +182,25 @@ unsafe fn do_pullshers() {
                 cell.updated = true;
                 if push(x, y, dir, 1, None) {
                     pull(x - off.x, y - off.y, dir);
+                }
+            }
+        });
+    }
+}
+
+unsafe fn do_trashpullers() {
+    for dir in UPDATE_DIRECTIONS {
+        let off = dir.flip().to_vector();
+        grid.for_each_dir(dir, |x, y, cell| {
+            if cell.id == TRASHPULLER && cell.direction == dir && !cell.updated {
+                cell.updated = true;
+                if let Some(pushed) = grid.get(x + off.x, y + off.y) {
+                    if can_move(pushed, dir, MoveForce::Puller) && !is_trash(pushed, dir) {
+                        grid.delete(x + off.x, y + off.y);
+                        if grid.get(x - off.x, y - off.y).is_none() {
+                            pull(x, y, dir);
+                        }
+                    }
                 }
             }
         });
