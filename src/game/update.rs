@@ -117,37 +117,23 @@ unsafe fn do_gens() {
 
 unsafe fn do_angled_gens() {
     for dir in UPDATE_DIRECTIONS {
+        let push_offset = dir.rotate_right().to_vector();
+        let cell_offset = dir.flip().to_vector();
         grid.for_each_dir(dir, |x, y, cell| {
             if cell.id == GENERATOR_CW && cell.direction == dir && !cell.updated {
                 cell.updated = true;
-                let push_offset = dir.rotate_right().to_vector();
-                let px = x + push_offset.x;
-                let py = y + push_offset.y;
-
-                let cell_offset = dir.flip().to_vector();
-                let cx = x + cell_offset.x;
-                let cy = y + cell_offset.y;
-
-                if let Some(cell) = grid.get(cx, cy) {
+                if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
                     let mut cell = cell.copy();
                     cell.direction = cell.direction.rotate_right();
-                    push(px, py, dir.rotate_right(), 1, Some(cell));
+                    push(x + push_offset.x, y + push_offset.y, dir.rotate_right(), 1, Some(cell));
                 }
             }
             else if cell.id == GENERATOR_CCW && cell.direction == dir && !cell.updated {
                 cell.updated = true;
-                let push_offset = dir.rotate_left().to_vector();
-                let px = x + push_offset.x;
-                let py = y + push_offset.y;
-
-                let cell_offset = dir.flip().to_vector();
-                let cx = x + cell_offset.x;
-                let cy = y + cell_offset.y;
-
-                if let Some(cell) = grid.get(cx, cy) {
+                if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
                     let mut cell = cell.copy();
                     cell.direction = cell.direction.rotate_left();
-                    push(px, py, dir.rotate_left(), 1, Some(cell));
+                    push(x + push_offset.x, y + push_offset.y, dir.rotate_left(), 1, Some(cell));
                 }
             }
         });
@@ -189,11 +175,11 @@ unsafe fn do_orientators() {
 
 unsafe fn do_pullshers() {
     for dir in UPDATE_DIRECTIONS {
+        let off = dir.to_vector();
         grid.for_each_dir(dir, |x, y, cell| {
             if cell.id == PULLSHER && cell.direction == dir && !cell.updated {
                 cell.updated = true;
                 if push(x, y, dir, 1, None) {
-                    let off = dir.to_vector();
                     pull(x - off.x, y - off.y, dir);
                 }
             }
@@ -203,10 +189,10 @@ unsafe fn do_pullshers() {
 
 unsafe fn do_pullers() {
     for dir in UPDATE_DIRECTIONS {
+        let off = dir.to_vector();
         grid.for_each_dir(dir, |x, y, cell| {
             if cell.id == PULLER && cell.direction == dir && !cell.updated {
                 cell.updated = true;
-                let off = cell.direction.to_vector();
                 if grid.get(x + off.x, y + off.y).is_none() {
                     pull(x, y, dir);
                 }
@@ -217,12 +203,12 @@ unsafe fn do_pullers() {
 
 unsafe fn do_trashmovers() {
     for dir in UPDATE_DIRECTIONS {
+        let off = dir.to_vector();
         grid.for_each_dir(dir, |x, y, cell| {
             if cell.id == TRASHMOVER && cell.direction == dir && !cell.updated {
                 cell.updated = true;
-                let off = cell.direction.to_vector();
                 if let Some(pushed) = grid.get(x + off.x, y + off.y) {
-                    if !can_move(pushed, cell.direction, MoveForce::Mover) {
+                    if !can_move(pushed, dir, MoveForce::Mover) || is_trash(cell, dir) {
                         return;
                     }
                 }
@@ -246,10 +232,10 @@ unsafe fn do_movers() {
 
 unsafe fn do_speeds() {
     for dir in UPDATE_DIRECTIONS {
+        let off = dir.to_vector();
         grid.for_each_dir(dir, |x, y, cell| {
             if cell.id == SPEED && cell.direction == dir && !cell.updated {
                 cell.updated = true;
-                let off = cell.direction.to_vector();
                 if grid.get(x + off.x, y + off.y).is_none() {
                     push(x, y, dir, 0, None);
                 }
