@@ -138,7 +138,6 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
 } }
 
 pub fn can_rotate(cell: &Cell, side: Direction) -> bool {
-    #[allow(clippy::match_like_matches_macro)]
     match cell.id {
         WALL | GHOST => false,
         ORIENTATOR => false,

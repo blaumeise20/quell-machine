@@ -3,14 +3,14 @@ use super::direction::Direction;
 pub const DEFAULT_GRID_WIDTH: usize = 100;
 pub const DEFAULT_GRID_HEIGHT: usize = 100;
 
-pub static mut grid: Grid = Grid::new(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
-pub static mut initial: Grid = Grid::new(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
+pub static mut grid: Grid = Grid::new_const(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
+pub static mut initial: Grid = Grid::new_const(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
 
 pub type CellType = u16;
 
 static mut DUMMY_CELL: Option<Cell> = None;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Cell {
     pub id: CellType,
     pub direction: Direction,
@@ -35,6 +35,12 @@ impl Cell {
     }
 }
 
+impl Clone for Cell {
+    fn clone(&self) -> Self {
+        self.copy()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Grid {
     pub width: usize,
@@ -43,12 +49,22 @@ pub struct Grid {
 }
 
 impl Grid {
-    pub const fn new(width: usize, height: usize) -> Self {
+    pub const fn new_const(width: usize, height: usize) -> Self {
         Grid {
             width,
             height,
             cells: Vec::new(),
         }
+    }
+
+    pub fn new(width: usize, height: usize) -> Self {
+        let mut g = Grid {
+            width,
+            height,
+            cells: Vec::new(),
+        };
+        g.init();
+        g
     }
 
     pub fn init(&mut self) {
@@ -139,6 +155,14 @@ impl Grid {
                         f(x as isize, y as isize, cell);
                     }
                 }
+            }
+        }
+    }
+
+    pub fn insert(&mut self, x: isize, y: isize, other_grid: &Grid) {
+        for gy in 0..other_grid.height as isize {
+            for gx in 0..other_grid.width as isize {
+                self.set_cell(gx + x, gy + y, other_grid.get(gx, gy).clone());
             }
         }
     }

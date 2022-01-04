@@ -1,11 +1,11 @@
 extern crate clipboard;
 
-use std::{time::Instant, collections::HashMap, rc::Rc};
+use std::{time::Instant, collections::{HashMap, HashSet}, rc::Rc};
 use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{CELL_DATA, HOTBAR_ITEMS}};
+use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial, Grid}, direction::Direction, update::update, codes::{import, export}, cell_data::{CELL_DATA, HOTBAR_ITEMS}};
 
 pub static mut screen_x: f32 = DEFAULT_GRID_WIDTH as f32 / 2.0;
 pub static mut screen_y: f32 = DEFAULT_GRID_HEIGHT as f32 / 2.0;
@@ -27,10 +27,17 @@ const TOOLTIP_PADDING: f32 = 20.0;
 
 type Text = Rc<FormattedTextBlock>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Tool {
+    Place,
+    Rect(isize),
+    Circle(isize),
+}
+
 pub struct WinHandler {
     assets: Option<Assets>,
     prev_time: Instant,
-    keys: HashMap<VirtualKeyCode, bool>,
+    keys: HashSet<VirtualKeyCode>,
     mouse: Option<MouseButton>,
     mouse_pos: Vector2<f32>,
 
@@ -42,6 +49,7 @@ pub struct WinHandler {
     open_item_menu: Option<usize>,
     direction: Direction,
     place: bool,
+    placement_tool: Tool,
 
     running: bool,
     show_help: bool,
@@ -55,7 +63,7 @@ impl WinHandler {
         WinHandler {
             assets: None,
             prev_time: Instant::now(),
-            keys: HashMap::new(),
+            keys: HashSet::new(),
             mouse: None,
             mouse_pos: Vector2::new(0.0, 0.0),
 
@@ -67,6 +75,7 @@ impl WinHandler {
             open_item_menu: None,
             direction: Direction::Right,
             place: true,
+            placement_tool: Tool::Place,
 
             running: false,
             show_help: true,
@@ -172,23 +181,56 @@ impl WindowHandler for WinHandler {
         }
 
         unsafe {
-        // grid
-            if *self.keys.get(&VirtualKeyCode::W).unwrap_or(&false) { screen_y += delta_secs * CELL_SPEED / screen_zoom; }
-            if *self.keys.get(&VirtualKeyCode::S).unwrap_or(&false) { screen_y -= delta_secs * CELL_SPEED / screen_zoom; }
-            if *self.keys.get(&VirtualKeyCode::A).unwrap_or(&false) { screen_x -= delta_secs * CELL_SPEED / screen_zoom; }
-            if *self.keys.get(&VirtualKeyCode::D).unwrap_or(&false) { screen_x += delta_secs * CELL_SPEED / screen_zoom; }
-
-            draw_grid(assets, g);
-
-        // hotbar
             let hotbar_rect = Rectangle::new(
                 Vector2::new(0.0, SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT),
                 Vector2::new(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32),
             );
+            if self.keys.contains(&VirtualKeyCode::W) { screen_y += delta_secs * CELL_SPEED / screen_zoom; }
+            if self.keys.contains(&VirtualKeyCode::S) { screen_y -= delta_secs * CELL_SPEED / screen_zoom; }
+            if self.keys.contains(&VirtualKeyCode::A) { screen_x -= delta_secs * CELL_SPEED / screen_zoom; }
+            if self.keys.contains(&VirtualKeyCode::D) { screen_x += delta_secs * CELL_SPEED / screen_zoom; }
 
+        // grid
+            draw_grid(assets, g);
+
+        // placing
+            if self.place && !is_inside(hotbar_rect.clone(), self.mouse_pos) {
+                let screen_w_half = SCREEN_WIDTH / 2.0;
+                let screen_h_half = SCREEN_HEIGHT / 2.0;
+                let x = (self.mouse_pos.x - screen_w_half) / CELL_SIZE / screen_zoom + screen_x;
+                let y = screen_y - (self.mouse_pos.y - screen_h_half) / CELL_SIZE / screen_zoom;
+                let cell = Cell::new(HOTBAR_ITEMS[self.active_item][self.hotbar_state[self.active_item]].id, self.direction);
+
+                let x = x.floor() as isize;
+                let y = y.floor() as isize;
+
+                let dia = if let Tool::Rect(dia) = self.placement_tool { dia } else { 1 };
+                let half_dia = dia / 2;
+                let x = x - half_dia;
+                let y = y - half_dia;
+
+                let empty_grid = Grid::new(dia as usize, dia as usize);
+                let mut ghost_grid = empty_grid.clone();
+                for y in 0..dia {
+                    for x in 0..dia {
+                        ghost_grid.set(x, y, cell.copy());
+                    }
+                }
+
+                draw_ghost_grid(assets, g, x, y, &ghost_grid);
+
+                if let Some(MouseButton::Left) = self.mouse {
+                    grid.insert(x, y, &ghost_grid);
+                }
+                else if let Some(MouseButton::Right) = self.mouse {
+                    grid.insert(x, y, &empty_grid);
+                }
+            }
+
+        // hotbar
             // background
             g.draw_rectangle(
-                hotbar_rect.clone(),
+                hotbar_rect,
                 Color::from_hex_argb(0xcfaaaaaa),
             );
 
@@ -251,20 +293,6 @@ impl WindowHandler for WinHandler {
                 }
             }
 
-        // placing
-            if self.place && !is_inside(hotbar_rect, self.mouse_pos) {
-                let screen_w_half = SCREEN_WIDTH / 2.0;
-                let screen_h_half = SCREEN_HEIGHT / 2.0;
-                let x = (self.mouse_pos.x - screen_w_half) / CELL_SIZE / screen_zoom + screen_x;
-                let y = screen_y - (self.mouse_pos.y - screen_h_half) / CELL_SIZE / screen_zoom;
-                let cell = Cell::new(HOTBAR_ITEMS[self.active_item][self.hotbar_state[self.active_item]].id, self.direction);
-                if let Some(MouseButton::Left) = self.mouse {
-                    grid.set(x.floor() as isize, y.floor() as isize, cell);
-                }
-                else if let Some(MouseButton::Right) = self.mouse {
-                    grid.delete(x.floor() as isize, y.floor() as isize);
-                }
-            }
         }
 
         // help
@@ -305,7 +333,7 @@ impl WindowHandler for WinHandler {
 
     fn on_key_down(&mut self, _: &mut WindowHelper<()>, virtual_key_code: Option<VirtualKeyCode>, _: KeyScancode) {
         if let Some(key) = virtual_key_code {
-            self.keys.insert(key, true);
+            self.keys.insert(key);
             match key {
                 VirtualKeyCode::Escape => self.show_help = !self.show_help,
 
@@ -316,8 +344,8 @@ impl WindowHandler for WinHandler {
                 VirtualKeyCode::Q => self.direction -= 1,
                 VirtualKeyCode::E => self.direction += 1,
 
-                VirtualKeyCode::R => unsafe { screen_zoom /= 1.2 },
-                VirtualKeyCode::F => unsafe { screen_zoom *= 1.2 },
+                VirtualKeyCode::R => unsafe { if self.keys.contains(&VirtualKeyCode::LAlt) { scale_tool(&mut self.placement_tool, -2) } else { screen_zoom /= 1.2 } },
+                VirtualKeyCode::F => unsafe { if self.keys.contains(&VirtualKeyCode::LAlt) { scale_tool(&mut self.placement_tool,  2) } else { screen_zoom *= 1.2 } },
 
                 VirtualKeyCode::I => {
                     let mut clip: ClipboardContext = ClipboardProvider::new().unwrap();
@@ -413,6 +441,25 @@ unsafe fn do_tick(is_initial: &mut bool) {
     update();
 }
 
+fn scale_tool(tool: &mut Tool, change: isize) {
+    let value = match *tool {
+        Tool::Place => 1,
+        Tool::Rect(v) => v,
+        Tool::Circle(v) => v,
+    } + change;
+    if value < 1 {
+        *tool = Tool::Place;
+    }
+    else {
+        *tool = match (value, *tool) {
+            (1, _) => Tool::Place,
+            (_, Tool::Place) => Tool::Rect(value),
+            (value, Tool::Rect(_)) => Tool::Rect(value),
+            (value, Tool::Circle(_)) => Tool::Circle(value),
+        }
+    }
+}
+
 unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
     // calculate visible cells
     let screen_w_half = SCREEN_WIDTH / 2.0;
@@ -446,6 +493,46 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
             if let Some(cell) = grid.get(x as isize, y as isize) {
                 // draw cell
                 g.draw_rectangle_image(cell_rect.clone(), &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]);
+            }
+        }
+    }
+}
+unsafe fn draw_ghost_grid(assets: &Assets, g: &mut Graphics2D, gx: isize, gy: isize, ghost_grid: &Grid) {
+    // calculate visible cells
+    let screen_w_half = SCREEN_WIDTH / 2.0;
+    let screen_h_half = SCREEN_HEIGHT / 2.0;
+    // let sx = (-screen_w_half) / CELL_SIZE / screen_zoom + screen_x;
+    // let sy = screen_y - screen_h_half / CELL_SIZE / screen_zoom;
+    // let ex = screen_w_half / CELL_SIZE / screen_zoom + screen_x;
+    // let ey = screen_y - (-screen_h_half) / CELL_SIZE / screen_zoom;
+
+    // let sx = sx.floor() as isize;
+    // let sy = sy.floor() as isize;
+    // let ex = ex.ceil() as isize;
+    // let ey = ey.ceil() as isize;
+
+    // for y in sy..ey {
+    //     for x in sx..ex {
+    for y in 0..ghost_grid.height as isize {
+        for x in 0..ghost_grid.width as isize {
+            if let Some(cell) = ghost_grid.get(x as isize, y as isize) {
+                let x = x + gx;
+                let y = y + gy;
+                let cell_rect = Rectangle::new(
+                    Vector2::new(
+                        (x as f32 - screen_x) * CELL_SIZE * screen_zoom + screen_w_half,
+                        (screen_y - y as f32 - 1.0) * CELL_SIZE * screen_zoom + screen_h_half,
+                    ),
+                    Vector2::new(
+                        (x as f32 - screen_x + 1.0) * CELL_SIZE * screen_zoom + screen_w_half,
+                        (screen_y - y as f32) * CELL_SIZE * screen_zoom + screen_h_half,
+                    )
+                );
+                g.draw_rectangle_image_tinted(
+                    cell_rect.clone(),
+                    Color::from_hex_argb(0x70ffffff),
+                    &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]
+                );
             }
         }
     }
