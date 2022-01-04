@@ -176,12 +176,18 @@ celld! {
         sides 4,
         texture "stone"
     }
+    REPLICATOR 25 {
+        "Replicator",
+        "A generator that generates the cell in front of it.",
+        sides 4,
+        texture "replicator"
+    }
 }
 
 hotbar![
     [WALL, GHOST, STONE],
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, TRASHPULLER, SPEED],
-    [GENERATOR, GENERATOR_CW, GENERATOR_CCW],
+    [GENERATOR, GENERATOR_CW, GENERATOR_CCW, REPLICATOR],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY],
