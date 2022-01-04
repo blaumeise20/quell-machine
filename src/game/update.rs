@@ -120,7 +120,6 @@ unsafe fn do_gens() {
 
 unsafe fn do_angled_gens() {
     for dir in UPDATE_DIRECTIONS {
-        let push_offset = dir.rotate_right().to_vector();
         let cell_offset = dir.flip().to_vector();
         grid.for_each_dir(dir, |x, y, cell| {
             if cell.id == GENERATOR_CW && cell.direction == dir && !cell.updated {
@@ -128,6 +127,7 @@ unsafe fn do_angled_gens() {
                 if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
                     let mut cell = cell.copy();
                     cell.direction = cell.direction.rotate_right();
+                    let push_offset = dir.rotate_right().to_vector();
                     push(x + push_offset.x, y + push_offset.y, dir.rotate_right(), 1, Some(cell));
                 }
             }
@@ -136,6 +136,7 @@ unsafe fn do_angled_gens() {
                 if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
                     let mut cell = cell.copy();
                     cell.direction = cell.direction.rotate_left();
+                    let push_offset = dir.rotate_left().to_vector();
                     push(x + push_offset.x, y + push_offset.y, dir.rotate_left(), 1, Some(cell));
                 }
             }
