@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR}};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -24,6 +24,7 @@ pub fn update() {
 
         if cells.contains(&MIRROR) { do_mirrors(); }
         if cells.contains(&CROSSMIRROR) { do_crossmirrors(); }
+        if cells.contains(&SUCKER) { do_suckers(); }
         if cells.contains(&GENERATOR) { do_gens(); }
         if cells.contains(&GENERATOR_CW) || cells.contains(&GENERATOR_CCW) { do_angled_gens(); }
         if cells.contains(&REPLICATOR) { do_replicators(); }
@@ -101,6 +102,18 @@ unsafe fn do_crossmirrors() {
             }
         }
     });
+}
+
+unsafe fn do_suckers() {
+    for dir in UPDATE_DIRECTIONS {
+        let push_offset = dir.to_vector();
+        grid.for_each_dir(dir, |x, y, cell| {
+            if cell.id == SUCKER && cell.direction == dir && !cell.updated {
+                cell.updated = true;
+                pull(x + push_offset.x, y + push_offset.y, dir.flip());
+            }
+        });
+    }
 }
 
 unsafe fn do_gens() {

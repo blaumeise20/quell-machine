@@ -182,6 +182,12 @@ celld! {
         sides 4,
         texture "replicator"
     }
+    SUCKER 26 {
+        "Sucker",
+        "Trashes the cell in front of it.",
+        sides 4,
+        texture "sucker"
+    }
 }
 
 hotbar![
@@ -190,7 +196,7 @@ hotbar![
     [GENERATOR, GENERATOR_CW, GENERATOR_CCW, REPLICATOR],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
-    [TRASH, ENEMY],
+    [TRASH, ENEMY, SUCKER],
     [MIRROR, CROSSMIRROR],
 ];
 

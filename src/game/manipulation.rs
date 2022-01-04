@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL, TRASHPULLER, GHOST}};
+use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL, TRASHPULLER, GHOST, SUCKER}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
@@ -25,6 +25,7 @@ pub fn is_trash(cell: &Cell, direction: Direction) -> bool {
         TRASH | ENEMY => true,
         TRASHMOVER if cell.direction == direction.flip() => true,
         TRASHPULLER if cell.direction == direction => true,
+        SUCKER if cell.direction == direction.flip() => true,
         _ => false,
     }
 }
@@ -126,7 +127,24 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
                 break;
             }
 
-            grid.set(cx, cy, grid.take(cx - ox, cy - oy).unwrap());
+            let mut do_move = true;
+            let old_cell = grid.get(cx, cy);
+            if let Some(cell) = old_cell {
+                if cell.id == ENEMY {
+                    // cell is deleted and enemy destroyed
+                    grid.delete(cx, cy);
+                    do_move = false;
+                }
+                else if is_trash(cell, dir) {
+                    // cell is trashed
+                    do_move = false;
+                }
+            }
+
+            let cell = grid.take(cx - ox, cy - oy).unwrap();
+            if do_move {
+                grid.set(cx, cy, cell);
+            }
 
             cx -= ox;
             cy -= oy;
