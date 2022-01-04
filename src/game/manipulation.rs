@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL, TRASHPULLER}};
+use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL, TRASHPULLER, GHOST}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
@@ -10,7 +10,7 @@ pub enum MoveForce {
 
 pub fn can_move(cell: &Cell, direction: Direction, force: MoveForce) -> bool {
     match cell.id {
-        WALL => false,
+        WALL | GHOST => false,
         SLIDE | SLIDE_WALL if cell.direction.shrink(2) != direction.shrink(2) => false,
         ONE_DIR if cell.direction != direction => false,
         MIRROR if force == MoveForce::Mirror && cell.direction.shrink(2) == direction.shrink(2) => false,
@@ -27,6 +27,10 @@ pub fn is_trash(cell: &Cell, direction: Direction) -> bool {
         TRASHPULLER if cell.direction == direction => true,
         _ => false,
     }
+}
+
+pub fn can_generate(cell: &Cell) -> bool {
+    cell.id != GHOST
 }
 
 pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>) -> bool { unsafe {
@@ -133,7 +137,7 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
 pub fn can_rotate(cell: &Cell, side: Direction) -> bool {
     #[allow(clippy::match_like_matches_macro)]
     match cell.id {
-        WALL => false,
+        WALL | GHOST => false,
         ORIENTATOR => false,
         SLIDE_WALL if (cell.direction - side).shrink(2) == Direction::Down => false,
         _ => true,

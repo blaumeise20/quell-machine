@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER}};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -109,7 +109,9 @@ unsafe fn do_gens() {
             if cell.id == GENERATOR && cell.direction == dir && !cell.updated {
                 cell.updated = true;
                 if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                    push(x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()));
+                    if can_generate(cell) {
+                        push(x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()));
+                    }
                 }
             }
         });

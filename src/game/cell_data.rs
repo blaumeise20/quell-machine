@@ -164,10 +164,16 @@ celld! {
         sides 4,
         texture "trashpuller"
     }
+    GHOST 23 {
+        "Ghost",
+        "A wall that can't be generated.",
+        sides 1,
+        texture "ghost"
+    }
 }
 
 hotbar![
-    [WALL],
+    [WALL, GHOST],
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, TRASHPULLER, SPEED],
     [GENERATOR, GENERATOR_CW, GENERATOR_CCW],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
