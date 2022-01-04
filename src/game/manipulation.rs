@@ -68,6 +68,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
         if force == 0 { return false; }
     }
 
+    let mut did_survive = true;
     while tx != x || ty != y {
         tx -= ox;
         ty -= oy;
@@ -81,10 +82,12 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
             if cell.id == ENEMY {
                 // cell is deleted and enemy destroyed
                 grid.delete(tx + ox, ty + oy);
+                did_survive = false;
                 continue;
             }
             else if is_trash(cell, dir) {
                 // cell is trashed
+                did_survive = false;
                 continue;
             }
         }
@@ -96,7 +99,7 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
         grid.set(x, y, cell);
     }
 
-    true
+    did_survive
 } }
 
 pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {

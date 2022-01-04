@@ -170,10 +170,16 @@ celld! {
         sides 1,
         texture "ghost"
     }
+    STONE 24 {
+        "Stone",
+        "A cell with gravity. Will try to form hills.",
+        sides 4,
+        texture "stone"
+    }
 }
 
 hotbar![
-    [WALL, GHOST],
+    [WALL, GHOST, STONE],
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, TRASHPULLER, SPEED],
     [GENERATOR, GENERATOR_CW, GENERATOR_CCW],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],

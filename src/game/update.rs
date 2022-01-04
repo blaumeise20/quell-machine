@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER}};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -28,6 +28,7 @@ pub fn update() {
         if cells.contains(&GENERATOR_CW) || cells.contains(&GENERATOR_CCW) { do_angled_gens(); }
         if cells.contains(&ROTATOR_CW) || cells.contains(&ROTATOR_CCW) { do_rotators(); }
         if cells.contains(&ORIENTATOR) { do_orientators(); }
+        if cells.contains(&STONE) { do_stones(); }
         if cells.contains(&PULLSHER) { do_pullshers(); }
         if cells.contains(&TRASHPULLER) { do_trashpullers(); }
         if cells.contains(&PULLER) { do_pullers(); }
@@ -175,6 +176,90 @@ unsafe fn do_orientators() {
             rotate_to(x, y + 1, cell.direction, Direction::Down);
         }
     });
+}
+
+unsafe fn do_stones() {
+    for dir in UPDATE_DIRECTIONS {
+        grid.for_each_dir(dir.rotate_right(), |x, y, cell| {
+            if cell.id == STONE && cell.direction == dir && !cell.updated {
+                cell.updated = true;
+                if !push(x, y, dir.rotate_right(), 1, None) {
+                    // complex logic lol
+
+                    let down = dir.rotate_right();
+                    let off_right = dir.to_vector();
+                    let off_down = down.to_vector();
+                    let off_left = dir.flip().to_vector();
+
+                    let cell_right = grid.get(x + off_right.x, y + off_right.y);
+                    let cell_left = grid.get(x + off_left.x, y + off_left.y);
+
+                    let cell_right_down = grid.get(x + off_right.x + off_down.x, y + off_right.y + off_down.y);
+                    let cell_left_down = grid.get(x + off_left.x + off_down.x, y + off_left.y + off_down.y);
+                    let can_move_right = grid.is_in_bounds(x + off_right.x + off_down.x, y + off_right.y + off_down.y) && cell_right_down.is_none();
+                    let can_move_left = grid.is_in_bounds(x + off_left.x + off_down.x, y + off_left.y + off_down.y) && cell_left_down.is_none();
+                    let has_free = can_move_right || can_move_left;
+                    if !has_free { return; }
+
+                    let prefered_dir;
+                    if cell_right.is_none() && can_move_right {
+                        if cell_left.is_some() && can_move_left {
+                            prefered_dir = Some(dir);
+                        }
+                        else {
+                            prefered_dir = None;
+                        }
+                    }
+                    else if cell_left.is_none() {
+                        if can_move_left {
+                            prefered_dir = Some(dir.flip());
+                        }
+                        else {
+                            return;
+                        }
+                    }
+                    else {
+                        let cell_right = cell_right.as_ref();
+                        let cell_left = cell_left.as_ref();
+                        if let Some(cell_left) = cell_left {
+                            if (is_trash(cell_left, dir.flip()) || !can_move(cell_left, dir.flip(), MoveForce::Mover)) && can_move_right {
+                                prefered_dir = Some(dir);
+                            }
+                            else {
+                                prefered_dir = None;
+                            }
+                        }
+                        else if let Some(cell_right) = cell_right {
+                            if (is_trash(cell_right, dir) || !can_move(cell_right, dir, MoveForce::Mover)) && can_move_left {
+                                prefered_dir = Some(dir.flip());
+                            }
+                            else {
+                                prefered_dir = None;
+                            }
+                        }
+                        else {
+                            prefered_dir = None;
+                        }
+                    }
+
+                    if let Some(dir) = prefered_dir {
+                        let off = dir.to_vector();
+                        if push(x, y, dir, 1, None) {
+                            push(x + off.x, y + off.y, down, 1, None);
+                        }
+                    }
+                    else if can_move_left && !can_move_right {
+                        if push(x, y, dir.flip(), 1, None) {
+                            push(x, y, down, 1, None);
+                        }
+                    }
+                    else if push(x, y, dir, 1, None) {
+                        push(x, y, down, 1, None);
+                    }
+                }
+            }
+        });
+    }
 }
 
 unsafe fn do_pullshers() {
