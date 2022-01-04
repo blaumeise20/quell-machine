@@ -152,7 +152,6 @@ unsafe fn do_replicators() {
         grid.for_each_dir(dir, |x, y, cell| {
             if cell.id == REPLICATOR && cell.direction == dir && !cell.updated {
                 cell.updated = true;
-                println!("{} {}", x, y);
                 if let Some(cell) = grid.get(x + push_offset.x, y + push_offset.y) {
                     if can_generate(cell) {
                         push(x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()));
