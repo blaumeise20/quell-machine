@@ -1,3 +1,4 @@
 /target
-/build/*/quell_machine*
-/build/*/assets
+/build/macos/Quell Machine.app/Contents/MacOS/quell_machine
+/build/macos/Quell Machine.app/Contents/Resources/assets
+

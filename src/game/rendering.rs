@@ -1,6 +1,6 @@
 extern crate clipboard;
 
-use std::{time::Instant, collections::{HashMap, HashSet}, rc::Rc};
+use std::{time::Instant, collections::{HashMap, HashSet}, rc::Rc, path::PathBuf};
 use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
@@ -35,6 +35,7 @@ enum Tool {
 }
 
 pub struct WinHandler {
+    resource_path: PathBuf,
     assets: Option<Assets>,
     prev_time: Instant,
     keys: HashSet<VirtualKeyCode>,
@@ -59,8 +60,9 @@ pub struct WinHandler {
 
 impl WinHandler {
     #[inline(always)]
-    pub fn new() -> Self {
+    pub fn new(resource_path: PathBuf) -> Self {
         WinHandler {
+            resource_path,
             assets: None,
             prev_time: Instant::now(),
             keys: HashSet::new(),
@@ -104,7 +106,7 @@ impl WindowHandler for WinHandler {
                     g.create_image_from_file_path(
                         Some(ImageFileFormat::PNG),
                         ImageSmoothingMode::NearestNeighbor,
-                        $path
+                        self.resource_path.join($path)
                     ).unwrap()
                 }
             }
@@ -149,7 +151,7 @@ impl WindowHandler for WinHandler {
                             tex1,
                             tex2,
                             tex3,
-                        ] = create_rotated_textures(cell.sides, "assets/cells/".to_string() + cell.texture_name + ".png");
+                        ] = create_rotated_textures(cell.sides, self.resource_path.join("assets/cells/".to_string() + cell.texture_name + ".png"));
                         map.insert(cell.id, [
                             g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex0.width(), tex0.height()), &tex0.into_raw()).unwrap(),
                             g.create_image_from_raw_pixels(ImageDataType::RGBA, ImageSmoothingMode::NearestNeighbor, Vector2::new(tex1.width(), tex1.height()), &tex1.into_raw()).unwrap(),
@@ -565,7 +567,7 @@ struct Assets {
     font: Font,
 }
 
-fn create_rotated_textures(amount: usize, path: String) -> [ImageBuffer<Rgba<u8>, Vec<u8>>; 4] {
+fn create_rotated_textures(amount: usize, path: PathBuf) -> [ImageBuffer<Rgba<u8>, Vec<u8>>; 4] {
     let first_texture = image::open(path).unwrap().to_rgba8();
     let mut textures = [first_texture.clone(), first_texture.clone(), first_texture.clone(), first_texture];
     for (i, img) in textures.iter_mut().enumerate() {
