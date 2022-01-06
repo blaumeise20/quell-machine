@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER}};
+use super::{cells::grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -27,6 +27,7 @@ pub fn update() {
         if cells.contains(&SUCKER) { do_suckers(); }
         if cells.contains(&GENERATOR) { do_gens(); }
         if cells.contains(&GENERATOR_CW) || cells.contains(&GENERATOR_CCW) { do_angled_gens(); }
+        if cells.contains(&GENERATOR_CROSS) { do_cross_gens(); }
         if cells.contains(&REPLICATOR) { do_replicators(); }
         if cells.contains(&ROTATOR_CW) || cells.contains(&ROTATOR_CCW) { do_rotators(); }
         if cells.contains(&ORIENTATOR) { do_orientators(); }
@@ -153,6 +154,30 @@ unsafe fn do_angled_gens() {
                     cell.direction = cell.direction.rotate_left();
                     let push_offset = dir.rotate_left().to_vector();
                     push(x + push_offset.x, y + push_offset.y, dir.rotate_left(), 1, Some(cell));
+                }
+            }
+        });
+    }
+}
+
+unsafe fn do_cross_gens() {
+    for dir in UPDATE_DIRECTIONS {
+        let push_offset_1 = dir.to_vector();
+        let cell_offset_1 = dir.flip().to_vector();
+        let push_offset_2 = dir.rotate_left().to_vector();
+        let cell_offset_2 = dir.rotate_right().to_vector();
+        grid.for_each_dir(dir, |x, y, cell| {
+            if cell.id == GENERATOR_CROSS && cell.direction == dir && !cell.updated {
+                cell.updated = true;
+                if let Some(cell) = grid.get(x + cell_offset_1.x, y + cell_offset_1.y) {
+                    if can_generate(cell) {
+                        push(x + push_offset_1.x, y + push_offset_1.y, dir, 1, Some(cell.copy()));
+                    }
+                }
+                if let Some(cell) = grid.get(x + cell_offset_2.x, y + cell_offset_2.y) {
+                    if can_generate(cell) {
+                        push(x + push_offset_2.x, y + push_offset_2.y, dir.rotate_left(), 1, Some(cell.copy()));
+                    }
                 }
             }
         });

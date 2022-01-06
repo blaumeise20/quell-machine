@@ -188,12 +188,18 @@ celld! {
         sides 4,
         texture "sucker"
     }
+    GENERATOR_CROSS 27 {
+        "Generator Cross",
+        "Like a generator but stacked 90 degrees.",
+        sides 4,
+        texture "generator_cross"
+    }
 }
 
 hotbar![
     [WALL, GHOST, STONE],
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, TRASHPULLER, SPEED],
-    [GENERATOR, GENERATOR_CW, GENERATOR_CCW, REPLICATOR],
+    [GENERATOR, GENERATOR_CW, GENERATOR_CCW, GENERATOR_CROSS, REPLICATOR],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY, SUCKER],
