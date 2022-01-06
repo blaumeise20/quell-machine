@@ -1,4 +1,7 @@
 /target
+
 /build/macos/Quell Machine.app/Contents/MacOS/quell_machine
 /build/macos/Quell Machine.app/Contents/Resources/assets
 
+/build/windows/Quell Machine.exe
+/build/windows/assets
