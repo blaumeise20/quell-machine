@@ -158,12 +158,4 @@ impl Grid {
             }
         }
     }
-
-    pub fn insert(&mut self, x: isize, y: isize, other_grid: &Grid) {
-        for gy in 0..other_grid.height as isize {
-            for gx in 0..other_grid.width as isize {
-                self.set_cell(gx + x, gy + y, other_grid.get(gx, gy).clone());
-            }
-        }
-    }
 }

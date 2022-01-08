@@ -5,7 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial, Grid}, direction::Direction, update::update, codes::{import, export}, cell_data::{CELL_DATA, HOTBAR_ITEMS}};
+use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{CELL_DATA, HOTBAR_ITEMS}};
 
 pub static mut screen_x: f32 = DEFAULT_GRID_WIDTH as f32 / 2.0;
 pub static mut screen_y: f32 = DEFAULT_GRID_HEIGHT as f32 / 2.0;
@@ -115,7 +115,7 @@ impl WindowHandler for WinHandler {
 
             unsafe {
                 self.help_text = Some(font.layout_text(
-                    "WASD to move, R+F to zoom, Left click to place, Right click to delete, I+O to import/export, Space to start, G to step, T to reset, Press ESC to hide this message",
+                    "WASD to move\nR+F to zoom\nLeft click to place\nRight click to delete\nAlt+R/F to change cursor size\nI+O to import/export\nSpace to start\nG to step\nT to reset\n\nPress ESC to hide this message",
                     25.0,
                     TextOptions::new()
                         .with_wrap_to_width(SCREEN_WIDTH, TextAlignment::Center)
@@ -161,6 +161,11 @@ impl WindowHandler for WinHandler {
                     }
                     map
                 },
+
+                tool_place: img!("assets/tool_place.png"),
+                tool_rect: img!("assets/tool_rect.png"),
+                tool_circle: img!("assets/tool_circle.png"),
+
                 font,
             };
 
@@ -206,26 +211,59 @@ impl WindowHandler for WinHandler {
                 let x = x.floor() as isize;
                 let y = y.floor() as isize;
 
-                let dia = if let Tool::Rect(dia) = self.placement_tool { dia } else { 1 };
+                let dia = match self.placement_tool {
+                    Tool::Place => 1,
+                    Tool::Rect(d) => d,
+                    Tool::Circle(d) => d,
+                };
                 let half_dia = dia / 2;
                 let x = x - half_dia;
                 let y = y - half_dia;
 
-                let empty_grid = Grid::new(dia as usize, dia as usize);
-                let mut ghost_grid = empty_grid.clone();
-                for y in 0..dia {
-                    for x in 0..dia {
-                        ghost_grid.set(x, y, cell.copy());
-                    }
-                }
-
-                draw_ghost_grid(assets, g, x, y, &ghost_grid);
-
+                let place_cell;
+                let do_place;
                 if let Some(MouseButton::Left) = self.mouse {
-                    grid.insert(x, y, &ghost_grid);
+                    place_cell = Some(cell.clone());
+                    do_place = true;
                 }
                 else if let Some(MouseButton::Right) = self.mouse {
-                    grid.insert(x, y, &empty_grid);
+                    place_cell = None;
+                    do_place = true;
+                }
+                else {
+                    place_cell = None;
+                    do_place = false;
+                }
+
+                if let Tool::Circle(_) = self.placement_tool {
+                    let real_half_dia = half_dia as f32 + 0.5;
+                    let sqrad = real_half_dia * real_half_dia;
+                    for oy in 0..dia {
+                        for ox in 0..dia {
+                            let x_dist = ox as f32 + 0.5 - real_half_dia;
+                            let y_dist = oy as f32 + 0.5 - real_half_dia;
+                            if x_dist * x_dist + y_dist * y_dist <= sqrad {
+                                let x = x + ox;
+                                let y = y + oy;
+                                draw_ghost_cell(assets, g, x, y, &cell);
+                                if do_place {
+                                    grid.set_cell(x, y, place_cell.clone());
+                                }
+                            }
+                        }
+                    }
+                }
+                else {
+                    for oy in 0..dia {
+                        for ox in 0..dia {
+                            let x = x + ox;
+                            let y = y + oy;
+                            draw_ghost_cell(assets, g, x, y, &cell);
+                            if do_place {
+                                grid.set_cell(x, y, place_cell.clone());
+                            }
+                        }
+                    }
                 }
             }
 
@@ -259,6 +297,27 @@ impl WindowHandler for WinHandler {
                 );
             }
 
+            // active tool
+            let tool_img = match self.placement_tool {
+                Tool::Place => &assets.tool_place,
+                Tool::Rect(_) => &assets.tool_rect,
+                Tool::Circle(_) => &assets.tool_circle,
+            };
+            let tool_rect = Rectangle::new(
+                Vector2::new(
+                    SCREEN_WIDTH as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
+                    SCREEN_HEIGHT as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
+                ),
+                Vector2::new(
+                    SCREEN_WIDTH as f32 - HOTBAR_CELL_SPACING,
+                    SCREEN_HEIGHT as f32 - HOTBAR_CELL_SPACING,
+                ),
+            );
+            g.draw_rectangle_image(
+                tool_rect,
+                tool_img,
+            );
+
             // top border
             g.draw_line(
                 Vector2::new(0.0, SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT),
@@ -269,28 +328,60 @@ impl WindowHandler for WinHandler {
 
             // open item menu
             if let Some(i1) = self.open_item_menu {
-                let img_x = i1 as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING;
-                for i2 in 0..HOTBAR_ITEMS[i1].len() {
-                    let id = HOTBAR_ITEMS[i1][i2].id;
-                    let cell_img = &assets.cells.get(&id).unwrap()[usize::from(self.direction)];
-                    let rect = Rectangle::new(
-                        Vector2::new(
-                            img_x,
-                            SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
-                        ),
-                        Vector2::new(
-                            img_x + HOTBAR_CELL_SIZE,
-                            SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
-                        ),
-                    );
-                    g.draw_rectangle_image_tinted(
-                        rect.clone(),
-                        Color::from_hex_argb(if self.hotbar_state[i1] == i2 { 0xffffffff } else { 0x7fffffff }),
-                        cell_img,
-                    );
-                    if is_inside(rect.clone(), self.mouse_pos) {
-                        let position = rect.top_right() + Vector2::new(HOTBAR_CELL_SPACING, 0.0);
-                        draw_tooltip(g, position, self.hotbar_item_text.as_ref().unwrap().get(&id).unwrap());
+                if i1 < HOTBAR_ITEMS.len() {
+                    let img_x = i1 as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING;
+                    for i2 in 0..HOTBAR_ITEMS[i1].len() {
+                        let id = HOTBAR_ITEMS[i1][i2].id;
+                        let cell_img = &assets.cells.get(&id).unwrap()[usize::from(self.direction)];
+                        let rect = Rectangle::new(
+                            Vector2::new(
+                                img_x,
+                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                            ),
+                            Vector2::new(
+                                img_x + HOTBAR_CELL_SIZE,
+                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                            ),
+                        );
+                        g.draw_rectangle_image_tinted(
+                            rect.clone(),
+                            Color::from_hex_argb(if self.hotbar_state[i1] == i2 { 0xffffffff } else { 0x7fffffff }),
+                            cell_img,
+                        );
+                        if is_inside(rect.clone(), self.mouse_pos) {
+                            let position = rect.top_right() + Vector2::new(HOTBAR_CELL_SPACING, 0.0);
+                            draw_tooltip(g, position, self.hotbar_item_text.as_ref().unwrap().get(&id).unwrap());
+                        }
+                    }
+                }
+                else {
+                    let img_x = SCREEN_WIDTH as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING;
+                    for i2 in 0..3 {
+                        let img = match i2 {
+                            0 => &assets.tool_place,
+                            1 => &assets.tool_rect,
+                            2 => &assets.tool_circle,
+                            _ => unreachable!(),
+                        };
+                        let rect = Rectangle::new(
+                            Vector2::new(
+                                img_x,
+                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                            ),
+                            Vector2::new(
+                                img_x + HOTBAR_CELL_SIZE,
+                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                            ),
+                        );
+                        g.draw_rectangle_image_tinted(
+                            rect.clone(),
+                            Color::from_hex_argb(if tool_to_index(self.placement_tool) == i2 { 0xffffffff } else { 0x7fffffff }),
+                            img,
+                        );
+                        // if is_inside(rect.clone(), self.mouse_pos) {
+                        //     let position = rect.top_right() + Vector2::new(HOTBAR_CELL_SPACING, 0.0);
+                        //     draw_tooltip(g, position, self.hotbar_item_text.as_ref().unwrap().get(&id).unwrap());
+                        // }
                     }
                 }
             }
@@ -379,8 +470,57 @@ impl WindowHandler for WinHandler {
         self.mouse = Some(button);
 
         unsafe {
+            let len = HOTBAR_ITEMS.len();
+
+            if let Some(i1) = self.open_item_menu {
+                if i1 < len {
+                    let img_x = i1 as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING;
+                    for i2 in 0..HOTBAR_ITEMS[i1].len() {
+                        let rect = Rectangle::new(
+                            Vector2::new(
+                                img_x,
+                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                            ),
+                            Vector2::new(
+                                img_x + HOTBAR_CELL_SIZE,
+                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                            ),
+                        );
+                        if is_inside(rect, self.mouse_pos) && button == MouseButton::Left {
+                            self.hotbar_state[i1] = i2;
+                            self.place = false;
+                        }
+                    }
+                }
+                else {
+                    let img_x = SCREEN_WIDTH as f32 - HOTBAR_CELL_SPACING - HOTBAR_CELL_SIZE;
+                    for i2 in 0..3 {
+                        let rect = Rectangle::new(
+                            Vector2::new(
+                                img_x,
+                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                            ),
+                            Vector2::new(
+                                img_x + HOTBAR_CELL_SIZE,
+                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                            ),
+                        );
+                        if is_inside(rect, self.mouse_pos) && button == MouseButton::Left {
+                            self.placement_tool = match i2 {
+                                0 => Tool::Place,
+                                1 => Tool::Rect(5),
+                                2 => Tool::Circle(5),
+                                _ => unreachable!(),
+                            };
+                            self.place = false;
+                        }
+                    }
+                }
+                self.open_item_menu = None;
+            }
+
             #[allow(clippy::needless_range_loop)]
-            for i in 0..HOTBAR_ITEMS.len() {
+            for i in 0..len {
                 let rect = Rectangle::new(
                     Vector2::new(
                         i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING,
@@ -403,25 +543,18 @@ impl WindowHandler for WinHandler {
                 }
             }
 
-            if let Some(i1) = self.open_item_menu {
-                let img_x = i1 as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING;
-                for i2 in 0..HOTBAR_ITEMS[i1].len() {
-                    let rect = Rectangle::new(
-                        Vector2::new(
-                            img_x,
-                            SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
-                        ),
-                        Vector2::new(
-                            img_x + HOTBAR_CELL_SIZE,
-                            SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
-                        ),
-                    );
-                    if is_inside(rect, self.mouse_pos) && button == MouseButton::Left {
-                        self.hotbar_state[i1] = i2;
-                        self.open_item_menu = None;
-                        self.place = false;
-                    }
-                }
+            let tools_rect = Rectangle::new(
+                Vector2::new(
+                    SCREEN_WIDTH as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
+                    SCREEN_HEIGHT as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
+                ),
+                Vector2::new(
+                    SCREEN_WIDTH as f32 - HOTBAR_CELL_SPACING,
+                    SCREEN_HEIGHT as f32 - HOTBAR_CELL_SPACING,
+                ),
+            );
+            if is_inside(tools_rect, self.mouse_pos) {
+                self.open_item_menu = Some(len);
             }
         }
 
@@ -499,45 +632,24 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
         }
     }
 }
-unsafe fn draw_ghost_grid(assets: &Assets, g: &mut Graphics2D, gx: isize, gy: isize, ghost_grid: &Grid) {
-    // calculate visible cells
+unsafe fn draw_ghost_cell(assets: &Assets, g: &mut Graphics2D, x: isize, y: isize, cell: &Cell) {
     let screen_w_half = SCREEN_WIDTH / 2.0;
     let screen_h_half = SCREEN_HEIGHT / 2.0;
-    // let sx = (-screen_w_half) / CELL_SIZE / screen_zoom + screen_x;
-    // let sy = screen_y - screen_h_half / CELL_SIZE / screen_zoom;
-    // let ex = screen_w_half / CELL_SIZE / screen_zoom + screen_x;
-    // let ey = screen_y - (-screen_h_half) / CELL_SIZE / screen_zoom;
-
-    // let sx = sx.floor() as isize;
-    // let sy = sy.floor() as isize;
-    // let ex = ex.ceil() as isize;
-    // let ey = ey.ceil() as isize;
-
-    // for y in sy..ey {
-    //     for x in sx..ex {
-    for y in 0..ghost_grid.height as isize {
-        for x in 0..ghost_grid.width as isize {
-            if let Some(cell) = ghost_grid.get(x as isize, y as isize) {
-                let x = x + gx;
-                let y = y + gy;
-                let cell_rect = Rectangle::new(
-                    Vector2::new(
-                        (x as f32 - screen_x) * CELL_SIZE * screen_zoom + screen_w_half,
-                        (screen_y - y as f32 - 1.0) * CELL_SIZE * screen_zoom + screen_h_half,
-                    ),
-                    Vector2::new(
-                        (x as f32 - screen_x + 1.0) * CELL_SIZE * screen_zoom + screen_w_half,
-                        (screen_y - y as f32) * CELL_SIZE * screen_zoom + screen_h_half,
-                    )
-                );
-                g.draw_rectangle_image_tinted(
-                    cell_rect.clone(),
-                    Color::from_hex_argb(0x70ffffff),
-                    &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]
-                );
-            }
-        }
-    }
+    let cell_rect = Rectangle::new(
+        Vector2::new(
+            (x as f32 - screen_x) * CELL_SIZE * screen_zoom + screen_w_half,
+            (screen_y - y as f32 - 1.0) * CELL_SIZE * screen_zoom + screen_h_half,
+        ),
+        Vector2::new(
+            (x as f32 - screen_x + 1.0) * CELL_SIZE * screen_zoom + screen_w_half,
+            (screen_y - y as f32) * CELL_SIZE * screen_zoom + screen_h_half,
+        )
+    );
+    g.draw_rectangle_image_tinted(
+        cell_rect,
+        Color::from_hex_argb(0x70ffffff),
+        &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]
+    );
 }
 
 fn draw_tooltip(g: &mut Graphics2D, pos: Vector2<f32>, (name, description): &(Text, Text)) {
@@ -564,6 +676,10 @@ struct Assets {
     cell_bg: ImageHandle,
     cells: HashMap<CellType, [ImageHandle; 4]>,
 
+    tool_place: ImageHandle,
+    tool_rect: ImageHandle,
+    tool_circle: ImageHandle,
+
     font: Font,
 }
 
@@ -585,4 +701,12 @@ fn create_rotated_textures(amount: usize, path: PathBuf) -> [ImageBuffer<Rgba<u8
 fn is_inside<T: PartialOrd>(rect: Rectangle<T>, point: Vector2<T>) -> bool {
     rect.top_left().x <= point.x && rect.top_left().y <= point.y &&
         rect.bottom_right().x >= point.x && rect.bottom_right().y >= point.y
+}
+
+fn tool_to_index(tool: Tool) -> usize {
+    match tool {
+        Tool::Place => 0,
+        Tool::Rect(_) => 1,
+        Tool::Circle(_) => 2,
+    }
 }

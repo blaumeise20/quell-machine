@@ -5,6 +5,6 @@ edition = "2021"
 description = "Another Cell Machine remake but focused on speed"
 
 [dependencies]
-speedy2d = "1"
-clipboard = "0"
-image = "0"
+speedy2d = "1.4"
+clipboard = "0.5"
+image = "0.23"
