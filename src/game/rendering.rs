@@ -3,7 +3,7 @@ extern crate clipboard;
 use std::{time::Instant, collections::{HashMap, HashSet}, rc::Rc, path::PathBuf};
 use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
-use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
+use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton, MouseScrollDistance}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
 use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, grid, CellType, Cell, initial}, direction::Direction, update::update, codes::{import, export}, cell_data::{CELL_DATA, HOTBAR_ITEMS}};
 
@@ -565,6 +565,46 @@ impl WindowHandler for WinHandler {
     }
     fn on_mouse_move(&mut self, _: &mut WindowHelper<()>, position: Vector2<f32>) {
         self.mouse_pos = position;
+    }
+
+    fn on_mouse_wheel_scroll(&mut self, _: &mut WindowHelper<()>, distance: MouseScrollDistance) {
+        unsafe {
+            match distance {
+                MouseScrollDistance::Lines { x: _, y, z: _ } => {
+                    if self.keys.contains(&VirtualKeyCode::LAlt) {
+                        if y > 1.0 {
+                            scale_tool(&mut self.placement_tool, -2);
+                        }
+                        else if y < -1.0 {
+                            scale_tool(&mut self.placement_tool, 2);
+                        }
+                    }
+                    else if y > 0.0 {
+                        screen_zoom *= 1.2f64.powf(y.abs()) as f32;
+                    }
+                    else {
+                        screen_zoom /= 1.2f64.powf(y.abs()) as f32;
+                    }
+                },
+                MouseScrollDistance::Pixels { x: _, y, z: _ } => {
+                    if self.keys.contains(&VirtualKeyCode::LAlt) {
+                        if y > 8.0 {
+                            scale_tool(&mut self.placement_tool, -2);
+                        }
+                        else if y < -8.0 {
+                            scale_tool(&mut self.placement_tool, 2);
+                        }
+                    }
+                    else if y > 0.0 {
+                        screen_zoom *= 1.0 + (y.abs() as f32 / 100.0);
+                    }
+                    else {
+                        screen_zoom /= 1.0 + (y.abs() as f32 / 100.0);
+                    }
+                },
+                _ => {}
+            }
+        }
     }
 }
 
