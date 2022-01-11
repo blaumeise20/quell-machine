@@ -45,11 +45,13 @@ impl Clone for Cell {
 pub struct Grid {
     pub width: usize,
     pub height: usize,
-    pub cells: Vec<Vec<Option<Cell>>>,
+    cells: Vec<Vec<Option<Cell>>>,
 }
 
 impl Grid {
     pub const fn new_const(width: usize, height: usize) -> Self {
+        assert!(width > 0);
+        assert!(height > 0);
         Grid {
             width,
             height,
@@ -58,6 +60,9 @@ impl Grid {
     }
 
     pub fn new(width: usize, height: usize) -> Self {
+        assert!(width > 0);
+        assert!(height > 0);
+
         let mut g = Grid {
             width,
             height,
@@ -68,6 +73,7 @@ impl Grid {
     }
 
     pub fn init(&mut self) {
+        assert!(self.cells.is_empty());
         self.cells = vec![vec![None; self.width]; self.height];
     }
 
