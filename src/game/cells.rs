@@ -45,13 +45,14 @@ impl Clone for Cell {
 pub struct Grid {
     pub width: usize,
     pub height: usize,
-    cells: Vec<Vec<Option<Cell>>>,
+    cells: Vec<Option<Cell>>,
 }
 
 impl Grid {
     pub const fn new_const(width: usize, height: usize) -> Self {
         assert!(width > 0);
         assert!(height > 0);
+
         Grid {
             width,
             height,
@@ -74,7 +75,7 @@ impl Grid {
 
     pub fn init(&mut self) {
         assert!(self.cells.is_empty());
-        self.cells = vec![vec![None; self.width]; self.height];
+        self.cells = vec![None; self.width * self.height];
     }
 
     pub fn is_in_bounds(&self, x: isize, y: isize) -> bool {
@@ -83,16 +84,20 @@ impl Grid {
 
     pub fn get(&self, x: isize, y: isize) -> &Option<Cell> {
         if self.is_in_bounds(x, y) {
-            &self.cells[y as usize][x as usize]
+            &self.cells[y as usize * self.width + x as usize]
         }
         else {
             &None
         }
     }
 
+    pub fn get_unchecked(&self, x: isize, y: isize) -> &Option<Cell> {
+        &self.cells[y as usize * self.width + x as usize]
+    }
+
     pub fn get_mut(&mut self, x: isize, y: isize) -> &mut Option<Cell> {
         if self.is_in_bounds(x, y) {
-            &mut self.cells[y as usize][x as usize]
+            &mut self.cells[y as usize * self.width + x as usize]
         }
         else {
             unsafe { &mut DUMMY_CELL }
@@ -101,25 +106,25 @@ impl Grid {
 
     pub fn set(&mut self, x: isize, y: isize, cell: Cell) {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize][x as usize] = Some(cell);
+            self.cells[y as usize * self.width + x as usize] = Some(cell);
         }
     }
 
     pub fn set_cell(&mut self, x: isize, y: isize, cell: Option<Cell>) {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize][x as usize] = cell;
+            self.cells[y as usize * self.width + x as usize] = cell;
         }
     }
 
     pub fn delete(&mut self, x: isize, y: isize) {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize][x as usize] = None;
+            self.cells[y as usize * self.width + x as usize] = None;
         }
     }
 
     pub fn take(&mut self, x: isize, y: isize) -> Option<Cell> {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize][x as usize].take()
+            self.cells[y as usize * self.width + x as usize].take()
         }
         else {
             None
@@ -129,7 +134,7 @@ impl Grid {
     pub fn for_each(&self, mut f: impl FnMut(isize, isize, Option<&Cell>)) {
         for y in 0..self.height {
             for x in 0..self.width {
-                f(x as isize, y as isize, self.cells[y][x].as_ref());
+                f(x as isize, y as isize, self.cells[y * self.width + x].as_ref());
             }
         }
     }
@@ -137,7 +142,7 @@ impl Grid {
     pub fn for_each_mut(&mut self, mut f: impl FnMut(isize, isize, &mut Cell)) {
         for y in 0..self.height {
             for x in 0..self.width {
-                if let Some(cell) = self.cells[y][x].as_mut() {
+                if let Some(cell) = self.cells[y * self.width + x].as_mut() {
                     f(x as isize, y as isize, cell);
                 }
             }
@@ -148,7 +153,7 @@ impl Grid {
         if dir == Direction::Right || dir == Direction::Up {
             for y in (0..self.height).rev() {
                 for x in (0..self.width).rev() {
-                    if let Some(cell) = self.cells[y][x].as_mut() {
+                    if let Some(cell) = self.cells[y * self.width + x].as_mut() {
                         f(x as isize, y as isize, cell);
                     }
                 }
@@ -157,7 +162,7 @@ impl Grid {
         else {
             for y in 0..self.height {
                 for x in 0..self.width {
-                    if let Some(cell) = self.cells[y][x].as_mut() {
+                    if let Some(cell) = self.cells[y * self.width + x].as_mut() {
                         f(x as isize, y as isize, cell);
                     }
                 }

@@ -665,9 +665,9 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
             // draw background
             g.draw_rectangle_image(cell_rect.clone(), &assets.cell_bg);
 
-            if let Some(cell) = grid.get(x as isize, y as isize) {
+            if let Some(cell) = grid.get_unchecked(x as isize, y as isize) {
                 // draw cell
-                g.draw_rectangle_image(cell_rect.clone(), &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]);
+                g.draw_rectangle_image(cell_rect, &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]);
             }
         }
     }
