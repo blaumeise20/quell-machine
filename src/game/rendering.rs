@@ -423,6 +423,13 @@ impl WindowHandler for WinHandler {
             Color::WHITE,
             &assets.font.layout_text(&format!("Tick time: {}", self.tick_times.iter().sum::<f32>() / 10.0), 17.0, TextOptions::new()),
         );
+        
+        // ticks per second
+        g.draw_text(
+            Vector2::new(10.0, 50.0),
+            Color::WHITE,
+            &assets.font.layout_text(&format!("Ticks per second: {}", 1000.0/self.tick_times.iter().sum::<f32>()), 17.0, TextOptions::new()),
+        );
 
         helper.request_redraw();
 	}
