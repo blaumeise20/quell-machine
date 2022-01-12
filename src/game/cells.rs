@@ -74,54 +74,64 @@ impl Grid {
     }
 
     pub fn init(&mut self) {
+        assert!(self.width > 0);
+        assert!(self.height > 0);
         assert!(self.cells.is_empty());
         self.cells = vec![None; self.width * self.height];
     }
 
+    #[inline(always)]
     pub fn is_in_bounds(&self, x: isize, y: isize) -> bool {
         x >= 0 && y >= 0 && (x as usize) < self.width && (y as usize) < self.height
     }
 
-    pub fn get(&self, x: isize, y: isize) -> &Option<Cell> {
+    #[inline]
+    pub fn get<'a, 'b: 'a>(&'a self, x: isize, y: isize) -> &'b Option<Cell> {
         if self.is_in_bounds(x, y) {
-            &self.cells[y as usize * self.width + x as usize]
+            unsafe { &*(&self.cells[y as usize * self.width + x as usize] as *const _) }
         }
         else {
             &None
         }
     }
 
+    #[inline(always)]
     pub fn get_unchecked(&self, x: isize, y: isize) -> &Option<Cell> {
         &self.cells[y as usize * self.width + x as usize]
     }
 
-    pub fn get_mut(&mut self, x: isize, y: isize) -> &mut Option<Cell> {
+    #[inline]
+    pub fn get_mut<'a, 'b: 'a>(&'a mut self, x: isize, y: isize) -> &'b mut Option<Cell> {
         if self.is_in_bounds(x, y) {
-            &mut self.cells[y as usize * self.width + x as usize]
+            unsafe { &mut *(&mut self.cells[y as usize * self.width + x as usize] as *mut _) }
         }
         else {
             unsafe { &mut DUMMY_CELL }
         }
     }
 
+    #[inline(always)]
     pub fn set(&mut self, x: isize, y: isize, cell: Cell) {
         if self.is_in_bounds(x, y) {
             self.cells[y as usize * self.width + x as usize] = Some(cell);
         }
     }
 
+    #[inline(always)]
     pub fn set_cell(&mut self, x: isize, y: isize, cell: Option<Cell>) {
         if self.is_in_bounds(x, y) {
             self.cells[y as usize * self.width + x as usize] = cell;
         }
     }
 
+    #[inline(always)]
     pub fn delete(&mut self, x: isize, y: isize) {
         if self.is_in_bounds(x, y) {
             self.cells[y as usize * self.width + x as usize] = None;
         }
     }
 
+    #[inline]
     pub fn take(&mut self, x: isize, y: isize) -> Option<Cell> {
         if self.is_in_bounds(x, y) {
             self.cells[y as usize * self.width + x as usize].take()
