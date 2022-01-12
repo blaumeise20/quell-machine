@@ -1,5 +1,5 @@
 use speedy2d::dimen::Vector2;
-use crate::game::{direction::Direction, cells::{grid, Cell}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL, TRASHPULLER, GHOST, SUCKER}};
+use crate::game::{direction::Direction, cells::{Cell, Grid}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL, TRASHPULLER, GHOST, SUCKER}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
@@ -34,7 +34,7 @@ pub fn can_generate(cell: &Cell) -> bool {
     cell.id != GHOST
 }
 
-pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>) -> bool { unsafe {
+pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>) -> bool {
     let mut tx = x;
     let mut ty = y;
     let Vector2 { x: ox, y: oy } = dir.to_vector();
@@ -101,9 +101,9 @@ pub fn push(x: isize, y: isize, dir: Direction, mut force: usize, pushing: Optio
     }
 
     did_survive
-} }
+}
 
-pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
+pub fn pull(grid: &mut Grid, x: isize, y: isize, dir: Direction) {
     let opposite_dir = dir.flip();
     let Vector2 { x: ox, y: oy } = dir.to_vector();
     let mut cx = x + ox;
@@ -153,7 +153,7 @@ pub fn pull(x: isize, y: isize, dir: Direction) { unsafe {
             break;
         }
     }
-} }
+}
 
 pub fn can_rotate(cell: &Cell, side: Direction) -> bool {
     match cell.id {
@@ -175,7 +175,7 @@ unsafe fn rotate(cell: &mut Cell, dir: Direction, side: Direction) -> bool {
     }
 }
 
-pub fn rotate_by(x: isize, y: isize, dir: Direction, side: Direction) -> bool { unsafe {
+pub fn rotate_by(grid: &mut Grid, x: isize, y: isize, dir: Direction, side: Direction) -> bool { unsafe {
     let cell = grid.get_mut(x, y);
     if let Some(cell) = cell {
         rotate(cell, cell.direction + dir, side)
@@ -185,7 +185,7 @@ pub fn rotate_by(x: isize, y: isize, dir: Direction, side: Direction) -> bool { 
     }
 } }
 
-pub fn rotate_to(x: isize, y: isize, dir: Direction, side: Direction) -> bool { unsafe {
+pub fn rotate_to(grid: &mut Grid, x: isize, y: isize, dir: Direction, side: Direction) -> bool { unsafe {
     let cell = grid.get_mut(x, y);
     if let Some(cell) = cell {
         rotate(cell, dir, side)

@@ -3,9 +3,6 @@ use super::direction::Direction;
 pub const DEFAULT_GRID_WIDTH: usize = 100;
 pub const DEFAULT_GRID_HEIGHT: usize = 100;
 
-pub static mut grid: Grid = Grid::new_const(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
-pub static mut initial: Grid = Grid::new_const(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
-
 pub type CellType = u16;
 
 static mut DUMMY_CELL: Option<Cell> = None;
