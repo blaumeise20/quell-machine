@@ -145,35 +145,4 @@ impl Grid {
             }
         }
     }
-
-    pub fn for_each_mut(&mut self, mut f: impl FnMut(isize, isize, &mut Cell)) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                if let Some(cell) = self.cells[y * self.width + x].as_mut() {
-                    f(x as isize, y as isize, cell);
-                }
-            }
-        }
-    }
-
-    pub fn for_each_dir(&mut self, dir: Direction, mut f: impl FnMut(isize, isize, &mut Cell)) {
-        if dir == Direction::Right || dir == Direction::Up {
-            for y in (0..self.height).rev() {
-                for x in (0..self.width).rev() {
-                    if let Some(cell) = self.cells[y * self.width + x].as_mut() {
-                        f(x as isize, y as isize, cell);
-                    }
-                }
-            }
-        }
-        else {
-            for y in 0..self.height {
-                for x in 0..self.width {
-                    if let Some(cell) = self.cells[y * self.width + x].as_mut() {
-                        f(x as isize, y as isize, cell);
-                    }
-                }
-            }
-        }
-    }
 }
