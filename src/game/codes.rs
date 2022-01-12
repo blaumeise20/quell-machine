@@ -1,6 +1,6 @@
-use super::cells::{grid, Cell, Grid};
+use super::cells::{Cell, Grid};
 
-pub fn export() -> String { unsafe {
+pub fn export(grid: &Grid) -> String {
     let mut result = String::new();
 
     result.push_str("Q1;");
@@ -38,9 +38,9 @@ pub fn export() -> String { unsafe {
     }
 
     result
-} }
+}
 
-pub fn import(input: &str) -> Result<(), &'static str> { unsafe {
+pub fn import(input: &str) -> Result<Grid, &'static str> {
     let mut input = input.trim().split(';');
 
     let q1 = input.next().ok_or("missing Q1")?;
@@ -49,8 +49,7 @@ pub fn import(input: &str) -> Result<(), &'static str> { unsafe {
     let width = decode_num(input.next().ok_or("missing width")?.chars());
     let height = decode_num(input.next().ok_or("missing height")?.chars());
 
-    grid = Grid::new(width, height);
-    grid.init();
+    let mut grid = Grid::new(width, height);
 
     let mut cell_groups = Vec::new();
     for cell_group in input {
@@ -79,8 +78,8 @@ pub fn import(input: &str) -> Result<(), &'static str> { unsafe {
         }
     }
 
-    Ok(())
-} }
+    Ok(grid)
+}
 
 fn encode_cell_group(cell: String, count: usize) -> String {
     let mut result = String::new();

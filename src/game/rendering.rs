@@ -443,8 +443,8 @@ impl WindowHandler for WinHandler {
                 VirtualKeyCode::I => {
                     let mut clip: ClipboardContext = ClipboardProvider::new().unwrap();
                     let text = clip.get_contents().unwrap();
-                    let _ = import(text.as_str());
                     unsafe {
+                        grid = import(text.as_str()).unwrap();
                         screen_x = grid.width as f32 / 2.0;
                         screen_y = grid.height as f32 / 2.0;
                         screen_zoom = 1.0;
@@ -452,7 +452,7 @@ impl WindowHandler for WinHandler {
                 },
                 VirtualKeyCode::O => {
                     let mut clip: ClipboardContext = ClipboardProvider::new().unwrap();
-                    let text = export();
+                    let text = unsafe { export(&grid) };
                     clip.set_contents(text).unwrap();
                 },
                 _ => {},
