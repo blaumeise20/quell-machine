@@ -4,8 +4,31 @@ use crate::game::{direction::Direction, cells::{Cell, Grid}, cell_data::{WALL, S
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
     Mover,
-    Puller,
+    Pull,
     Mirror,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum PushResult {
+    Moved,
+    NotMoved,
+    Trashed,
+}
+impl PushResult {
+    pub fn did_move(&self) -> bool {
+        match self {
+            PushResult::Moved => true,
+            PushResult::NotMoved => false,
+            PushResult::Trashed => true,
+        }
+    }
+    pub fn did_move_survive(&self) -> bool {
+        match self {
+            PushResult::Moved => true,
+            PushResult::NotMoved => false,
+            PushResult::Trashed => false,
+        }
+    }
 }
 
 pub fn can_move(cell: &Cell, direction: Direction, force: MoveForce) -> bool {
@@ -34,13 +57,13 @@ pub fn can_generate(cell: &Cell) -> bool {
     cell.id != GHOST
 }
 
-pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>) -> bool {
+pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>) -> PushResult {
     let mut tx = x;
     let mut ty = y;
     let Vector2 { x: ox, y: oy } = dir.to_vector();
 
     loop {
-        if !grid.is_in_bounds(tx, ty) { return false; }
+        if !grid.is_in_bounds(tx, ty) { return PushResult::NotMoved; }
 
         let cell = grid.get(tx, ty);
         if let Some(cell) = cell {
@@ -56,7 +79,7 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
             if is_trash(cell, dir) { break; }
 
             if !can_move(cell, dir, MoveForce::Mover) {
-                return false;
+                return PushResult::NotMoved;
             }
 
             tx += ox;
@@ -66,41 +89,42 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
             break;
         }
 
-        if force == 0 { return false; }
+        if force == 0 { return PushResult::NotMoved; }
     }
 
-    let mut did_survive = true;
-    while tx != x || ty != y {
-        tx -= ox;
-        ty -= oy;
-
-        let mut cell = grid.take(tx, ty).unwrap();
-        if (cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER || cell.id == SPEED || cell.id == MOVLER) && cell.direction == dir {
-            cell.updated = true;
+    let mut x = x;
+    let mut y = y;
+    let mut next_cell = pushing;
+    let mut push_result = PushResult::Trashed;
+    loop {
+        if let Some(ref mut cell) = next_cell {
+            if (cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER || cell.id == SPEED || cell.id == MOVLER) && cell.direction == dir {
+                cell.updated = true;
+            }
         }
 
-        if let Some(cell) = grid.get(tx + ox, ty + oy) {
+        if let Some(cell) = grid.get_mut(x, y) {
             if cell.id == ENEMY {
                 // cell is deleted and enemy destroyed
-                grid.delete(tx + ox, ty + oy);
-                did_survive = false;
-                continue;
+                grid.delete(x, y);
+                break;
             }
             else if is_trash(cell, dir) {
                 // cell is trashed
-                did_survive = false;
-                continue;
+                break;
             }
         }
 
-        grid.set(tx + ox, ty + oy, cell);
+        push_result = PushResult::Moved;
+        let old_cell = grid.take(x, y);
+        grid.set_cell(x, y, next_cell);
+        next_cell = old_cell;
+        if tx == x && ty == y { break; }
+        x += ox;
+        y += oy;
     }
 
-    if let Some(cell) = pushing {
-        grid.set(x, y, cell);
-    }
-
-    did_survive
+    push_result
 }
 
 pub fn pull(grid: &mut Grid, x: isize, y: isize, dir: Direction) {
@@ -123,7 +147,7 @@ pub fn pull(grid: &mut Grid, x: isize, y: isize, dir: Direction) {
                 }
             }
 
-            if is_trash(cell, opposite_dir) || force == 0 || !can_move(cell, dir, MoveForce::Puller) {
+            if is_trash(cell, opposite_dir) || force == 0 || !can_move(cell, dir, MoveForce::Pull) {
                 break;
             }
 

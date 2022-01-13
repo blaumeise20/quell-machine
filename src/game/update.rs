@@ -272,7 +272,7 @@ fn do_stones(grid: &mut Grid) {
     loop_each_dir!(for dir, x, y, cell in grid; {
         if cell.id == STONE && cell.direction == dir && !cell.updated {
             cell.updated = true;
-            if !push(grid, x, y, dir.rotate_right(), 1, None) {
+            if push(grid, x, y, dir.rotate_right(), 1, None).did_move_survive() {
                 // complex logic lol
 
                 let down = dir.rotate_right();
@@ -333,16 +333,16 @@ fn do_stones(grid: &mut Grid) {
 
                 if let Some(dir) = prefered_dir {
                     let off = dir.to_vector();
-                    if push(grid, x, y, dir, 1, None) {
+                    if push(grid, x, y, dir, 1, None).did_move_survive() {
                         push(grid, x + off.x, y + off.y, down, 1, None);
                     }
                 }
                 else if can_move_left && !can_move_right {
-                    if push(grid, x, y, dir.flip(), 1, None) {
+                    if push(grid, x, y, dir.flip(), 1, None).did_move_survive() {
                         push(grid, x, y, down, 1, None);
                     }
                 }
-                else if push(grid, x, y, dir, 1, None) {
+                else if push(grid, x, y, dir, 1, None).did_move_survive() {
                     push(grid, x, y, down, 1, None);
                 }
             }
@@ -356,7 +356,7 @@ fn do_pullshers(grid: &mut Grid) {
     }, x, y, cell in grid; {
         if cell.id == PULLSHER && cell.direction == dir && !cell.updated {
             cell.updated = true;
-            if push(grid, x, y, dir, 1, None) {
+            if push(grid, x, y, dir, 1, None).did_move() {
                 pull(grid, x - off.x, y - off.y, dir);
             }
         }
@@ -370,7 +370,7 @@ fn do_trashpullers(grid: &mut Grid) {
         if cell.id == TRASHPULLER && cell.direction == dir && !cell.updated {
             cell.updated = true;
             if let Some(pushed) = grid.get(x + off.x, y + off.y) {
-                if can_move(pushed, dir, MoveForce::Puller) && !is_trash(pushed, dir) {
+                if can_move(pushed, dir, MoveForce::Pull) && !is_trash(pushed, dir) {
                     grid.delete(x + off.x, y + off.y);
                     if grid.get(x - off.x, y - off.y).is_none() {
                         pull(grid, x, y, dir);
