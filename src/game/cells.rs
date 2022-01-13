@@ -12,6 +12,7 @@ pub struct Cell {
     pub id: CellType,
     pub direction: Direction,
     pub updated: bool,
+    pub contained_cell: Option<(CellType, Direction)>,
 }
 
 impl Cell {
@@ -20,6 +21,7 @@ impl Cell {
             id,
             direction,
             updated: false,
+            contained_cell: None,
         }
     }
 
@@ -28,6 +30,7 @@ impl Cell {
             id: self.id,
             direction: self.direction,
             updated: false,
+            contained_cell: self.contained_cell,
         }
     }
 }

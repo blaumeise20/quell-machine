@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::Grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS}};
+use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -70,9 +70,11 @@ pub fn update(grid: &mut Grid) {
     if cells.contains(&GENERATOR_CW) || cells.contains(&GENERATOR_CCW) { do_angled_gens(grid); }
     if cells.contains(&GENERATOR_CROSS) { do_cross_gens(grid); }
     if cells.contains(&REPLICATOR) { do_replicators(grid); }
+    if cells.contains(&POSTOFFICE) { do_postoffices(grid); }
     if cells.contains(&ROTATOR_CW) || cells.contains(&ROTATOR_CCW) { do_rotators(grid); }
     if cells.contains(&ORIENTATOR) { do_orientators(grid); }
     if cells.contains(&STONE) { do_stones(grid); }
+    if cells.contains(&MAILBOX) { do_mailboxes(grid); }
     if cells.contains(&PULLSHER) { do_pullshers(grid); }
     if cells.contains(&TRASHPULLER) { do_trashpullers(grid); }
     if cells.contains(&PULLER) { do_pullers(grid); }
@@ -235,6 +237,27 @@ fn do_replicators(grid: &mut Grid) {
     });
 }
 
+fn do_postoffices(grid: &mut Grid) {
+    loop_each_dir!(for dir {
+        let mail_offset = dir.flip().to_vector();
+        let mailbox_offset = dir.to_vector();
+    }, x, y, cell in grid; {
+        if cell.id == POSTOFFICE && cell.direction == dir && !cell.updated {
+            cell.updated = true;
+            if let Some(mailbox) = grid.get_mut(x + mailbox_offset.x, y + mailbox_offset.y) {
+                if mailbox.id == MAILBOX {
+                    if let Some(mail) = grid.get_mut(x + mail_offset.x, y + mail_offset.y) {
+                        if can_move(mail, dir, MoveForce::Pull) {
+                            mailbox.contained_cell = Some((mail.id, mail.direction - dir));
+                            grid.delete(x + mail_offset.x, y + mail_offset.y);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 fn do_rotators(grid: &mut Grid) {
     loop_each!(for x, y, cell in grid; {
         if !cell.updated {
@@ -344,6 +367,19 @@ fn do_stones(grid: &mut Grid) {
                 }
                 else if push(grid, x, y, dir, 1, None).did_move_survive() {
                     push(grid, x, y, down, 1, None);
+                }
+            }
+        }
+    });
+}
+
+fn do_mailboxes(grid: &mut Grid) {
+    loop_each_dir!(for dir, x, y, cell in grid; {
+        if cell.id == MAILBOX && cell.direction == dir && !cell.updated {
+            cell.updated = true;
+            if let Some(contained) = cell.contained_cell {
+                if !push(grid, x, y, dir, 1, None).did_move() {
+                    grid.set(x, y, Cell::new(contained.0, dir + contained.1));
                 }
             }
         }

@@ -194,6 +194,18 @@ celld! {
         sides 4,
         texture "generator_cross"
     }
+    MAILBOX 28 {
+        "Mailbox",
+        "Can be filled with a cell and then moves with it. If it hits a wall it deletes itself and pops out the stored cell.",
+        sides 4,
+        texture "mailbox"
+    }
+    POSTOFFICE 29 {
+        "Post Office",
+        "Used to fill a mailbox. If there is a mailbox in front of it and a movable cell behind it, the \"mail\" will be deleted and put into the mailbox.",
+        sides 4,
+        texture "postoffice"
+    }
 }
 
 hotbar![
@@ -203,6 +215,7 @@ hotbar![
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY, SUCKER],
+    [MAILBOX, POSTOFFICE],
     [MIRROR, CROSSMIRROR],
 ];
 
