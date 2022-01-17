@@ -5,7 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton, MouseScrollDistance}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, CellType, Cell, Grid}, direction::Direction, update::update, codes::{import, export}, cell_data::{CELL_DATA, HOTBAR_ITEMS, MAILBOX}};
+use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, CellType, Cell, Grid}, direction::Direction, update::update, codes::{import, export_q1, export_q2}, cell_data::{CELL_DATA, HOTBAR_ITEMS, MAILBOX}};
 
 pub static mut grid: Grid = Grid::new_const(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
 pub static mut initial: Grid = Grid::new_const(DEFAULT_GRID_WIDTH, DEFAULT_GRID_HEIGHT);
@@ -477,7 +477,12 @@ impl WindowHandler for WinHandler {
                 },
                 VirtualKeyCode::O => {
                     let mut clip: ClipboardContext = ClipboardProvider::new().unwrap();
-                    let text = unsafe { export(&grid) };
+                    let text = unsafe { export_q1(&grid) };
+                    clip.set_contents(text).unwrap();
+                },
+                VirtualKeyCode::P => {
+                    let mut clip: ClipboardContext = ClipboardProvider::new().unwrap();
+                    let text = unsafe { export_q2(&grid) };
                     clip.set_contents(text).unwrap();
                 },
                 _ => {},
