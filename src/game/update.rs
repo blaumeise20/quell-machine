@@ -63,24 +63,30 @@ pub fn update(grid: &mut Grid) {
         }
     }
 
-    if cells.contains(&MIRROR) { do_mirrors(grid); }
-    if cells.contains(&CROSSMIRROR) { do_crossmirrors(grid); }
-    if cells.contains(&SUCKER) { do_suckers(grid); }
-    if cells.contains(&GENERATOR) { do_gens(grid); }
-    if cells.contains(&GENERATOR_CW) || cells.contains(&GENERATOR_CCW) { do_angled_gens(grid); }
-    if cells.contains(&GENERATOR_CROSS) { do_cross_gens(grid); }
-    if cells.contains(&REPLICATOR) { do_replicators(grid); }
-    if cells.contains(&POSTOFFICE) { do_postoffices(grid); }
-    if cells.contains(&ROTATOR_CW) || cells.contains(&ROTATOR_CCW) { do_rotators(grid); }
-    if cells.contains(&ORIENTATOR) { do_orientators(grid); }
-    if cells.contains(&STONE) { do_stones(grid); }
-    if cells.contains(&MAILBOX) { do_mailboxes(grid); }
-    if cells.contains(&PULLSHER) { do_pullshers(grid); }
-    if cells.contains(&TRASHPULLER) { do_trashpullers(grid); }
-    if cells.contains(&PULLER) { do_pullers(grid); }
-    if cells.contains(&TRASHMOVER) { do_trashmovers(grid); }
-    if cells.contains(&MOVER) { do_movers(grid); }
-    if cells.contains(&SPEED) { do_speeds(grid); }
+    macro_rules! subtick {
+        ($($cell:ident),*: $fn_name:ident) => {
+            if $(cells.contains(&$cell))||* { $fn_name(grid); }
+        }
+    }
+
+    subtick!(MIRROR          : do_mirrors);
+    subtick!(CROSSMIRROR     : do_crossmirrors);
+    subtick!(SUCKER          : do_suckers);
+    subtick!(GENERATOR       : do_gens);
+    subtick!(GENERATOR_CW, GENERATOR_CCW: do_angled_gens);
+    subtick!(GENERATOR_CROSS : do_cross_gens);
+    subtick!(REPLICATOR      : do_replicators);
+    subtick!(POSTOFFICE      : do_postoffices);
+    subtick!(ROTATOR_CW, ROTATOR_CCW: do_rotators);
+    subtick!(ORIENTATOR      : do_orientators);
+    subtick!(STONE           : do_stones);
+    subtick!(MAILBOX         : do_mailboxes);
+    subtick!(PULLSHER        : do_pullshers);
+    subtick!(TRASHPULLER     : do_trashpullers);
+    subtick!(PULLER          : do_pullers);
+    subtick!(TRASHMOVER      : do_trashmovers);
+    subtick!(MOVER           : do_movers);
+    subtick!(SPEED           : do_speeds);
 }
 
 fn do_mirrors(grid: &mut Grid) {
