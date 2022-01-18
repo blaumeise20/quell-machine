@@ -206,13 +206,19 @@ celld! {
         sides 4,
         texture "postoffice"
     }
+    PHYSICAL_GENERATOR 30 {
+        "Physical Generator",
+        "Generates the cell in front of it. If it hits a wall it pushes itself back.",
+        sides 4,
+        texture "physical_generator"
+    }
 }
 
 hotbar![
     [WALL, GHOST, STONE],
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, TRASHPULLER, SPEED],
-    [GENERATOR, GENERATOR_CW, GENERATOR_CCW, GENERATOR_CROSS, REPLICATOR],
     [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
+    [GENERATOR, GENERATOR_CW, GENERATOR_CCW, GENERATOR_CROSS, REPLICATOR, PHYSICAL_GENERATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY, SUCKER],
     [MAILBOX, POSTOFFICE],

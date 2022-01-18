@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE}};
+use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -74,6 +74,7 @@ pub fn update(grid: &mut Grid) {
     subtick!(SUCKER          : do_suckers);
     subtick!(GENERATOR       : do_gens);
     subtick!(GENERATOR_CW, GENERATOR_CCW: do_angled_gens);
+    subtick!(PHYSICAL_GENERATOR: do_physical_gens);
     subtick!(GENERATOR_CROSS : do_cross_gens);
     subtick!(REPLICATOR      : do_replicators);
     subtick!(POSTOFFICE      : do_postoffices);
@@ -200,6 +201,22 @@ fn do_angled_gens(grid: &mut Grid) {
                 cell.direction = cell.direction.rotate_left();
                 let push_offset = dir.rotate_left().to_vector();
                 push(grid, x + push_offset.x, y + push_offset.y, dir.rotate_left(), 1, Some(cell));
+            }
+        }
+    });
+}
+
+fn do_physical_gens(grid: &mut Grid) {
+    loop_each_dir!(for dir {
+        let push_offset = dir.to_vector();
+        let cell_offset = dir.flip().to_vector();
+    }, x, y, cell in grid; {
+        if cell.id == PHYSICAL_GENERATOR && cell.direction == dir && !cell.updated {
+            cell.updated = true;
+            if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
+                if can_generate(cell) && !push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy())).did_move() {
+                    push(grid, x, y, dir.flip(), 1, Some(cell.copy()));
+                }
             }
         }
     });
