@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR}};
+use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180}};
 
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
@@ -78,7 +78,7 @@ pub fn update(grid: &mut Grid) {
     subtick!(GENERATOR_CROSS : do_cross_gens);
     subtick!(REPLICATOR      : do_replicators);
     subtick!(POSTOFFICE      : do_postoffices);
-    subtick!(ROTATOR_CW, ROTATOR_CCW: do_rotators);
+    subtick!(ROTATOR_CW, ROTATOR_CCW, ROTATOR_180: do_rotators);
     subtick!(ORIENTATOR      : do_orientators);
     subtick!(STONE           : do_stones);
     subtick!(MAILBOX         : do_mailboxes);
@@ -297,6 +297,13 @@ fn do_rotators(grid: &mut Grid) {
                 rotate_by(grid, x, y - 1, Direction::Up, Direction::Up);
                 rotate_by(grid, x - 1, y, Direction::Up, Direction::Right);
                 rotate_by(grid, x, y + 1, Direction::Up, Direction::Down);
+            }
+            else if cell.id == ROTATOR_180 {
+                cell.updated = true;
+                rotate_by(grid, x + 1, y, Direction::Left, Direction::Left);
+                rotate_by(grid, x, y - 1, Direction::Left, Direction::Up);
+                rotate_by(grid, x - 1, y, Direction::Left, Direction::Right);
+                rotate_by(grid, x, y + 1, Direction::Left, Direction::Down);
             }
         }
     });

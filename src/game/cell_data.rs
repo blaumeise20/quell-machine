@@ -212,13 +212,19 @@ celld! {
         sides 4,
         texture "physical_generator"
     }
+    ROTATOR_180 31 {
+        "Rotator 180",
+        "Rotates all touching cells 180 degrees.",
+        sides 1,
+        texture "rotator_180"
+    }
 }
 
 hotbar![
     [WALL, GHOST, STONE],
     [MOVER, PULLER, PULLSHER, MOVLER, TRASHMOVER, TRASHPULLER, SPEED],
-    [ROTATOR_CW, ROTATOR_CCW, ORIENTATOR],
     [GENERATOR, GENERATOR_CW, GENERATOR_CCW, GENERATOR_CROSS, REPLICATOR, PHYSICAL_GENERATOR],
+    [ROTATOR_CW, ROTATOR_CCW, ROTATOR_180, ORIENTATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY, SUCKER],
     [MAILBOX, POSTOFFICE],
