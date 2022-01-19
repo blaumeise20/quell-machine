@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180}};
 
+/// Order in which cell directions are updated.
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
     Direction::Left,
@@ -96,8 +97,8 @@ fn do_mirrors(grid: &mut Grid) {
             cell.updated = true;
             let cell_left = grid.get_mut(x - 1, y);
             let cell_right = grid.get_mut(x + 1, y);
-            if let Some(cell) = cell_left { if !can_move(cell, Direction::Right, MoveForce::Mirror) { continue; } }
-            if let Some(cell) = cell_right { if !can_move(cell, Direction::Left, MoveForce::Mirror) { continue; } }
+            if let Some(cell) = cell_left { if !can_move(cell, Direction::Right, MoveForce::Swap) { continue; } }
+            if let Some(cell) = cell_right { if !can_move(cell, Direction::Left, MoveForce::Swap) { continue; } }
 
             let cell_left = cell_left.take();
             grid.set_cell(x - 1, y, cell_right.take());
@@ -109,8 +110,8 @@ fn do_mirrors(grid: &mut Grid) {
             cell.updated = true;
             let cell_up = grid.get_mut(x, y + 1);
             let cell_down = grid.get_mut(x, y - 1);
-            if let Some(cell) = cell_up { if !can_move(cell, Direction::Down, MoveForce::Mirror) { return; } }
-            if let Some(cell) = cell_down { if !can_move(cell, Direction::Up, MoveForce::Mirror) { return; } }
+            if let Some(cell) = cell_up { if !can_move(cell, Direction::Down, MoveForce::Swap) { return; } }
+            if let Some(cell) = cell_down { if !can_move(cell, Direction::Up, MoveForce::Swap) { return; } }
 
             let cell_up = cell_up.take();
             grid.set_cell(x, y + 1, cell_down.take());
@@ -126,10 +127,10 @@ fn do_crossmirrors(grid: &mut Grid) {
             let cell_left = grid.get_mut(x - 1, y);
             let cell_right = grid.get_mut(x + 1, y);
             let left_movable = if let Some(cell) = cell_left {
-                can_move(cell, Direction::Right, MoveForce::Mirror)
+                can_move(cell, Direction::Right, MoveForce::Swap)
             } else { true };
             let right_movable = if let Some(cell) = cell_right {
-                can_move(cell, Direction::Left, MoveForce::Mirror)
+                can_move(cell, Direction::Left, MoveForce::Swap)
             } else { true };
             if left_movable && right_movable {
                 let cell_left = cell_left.take();
@@ -140,10 +141,10 @@ fn do_crossmirrors(grid: &mut Grid) {
             let cell_up = grid.get_mut(x, y + 1);
             let cell_down = grid.get_mut(x, y - 1);
             let up_movable = if let Some(cell) = cell_up {
-                can_move(cell, Direction::Down, MoveForce::Mirror)
+                can_move(cell, Direction::Down, MoveForce::Swap)
             } else { true };
             let down_movable = if let Some(cell) = cell_down {
-                can_move(cell, Direction::Up, MoveForce::Mirror)
+                can_move(cell, Direction::Up, MoveForce::Swap)
             } else { true };
             if up_movable && down_movable {
                 let cell_up = cell_left.take();
@@ -364,7 +365,7 @@ fn do_stones(grid: &mut Grid) {
                     let cell_right = cell_right.as_ref();
                     let cell_left = cell_left.as_ref();
                     if let Some(cell_left) = cell_left {
-                        if (is_trash(cell_left, dir.flip()) || !can_move(cell_left, dir.flip(), MoveForce::Mover)) && can_move_right {
+                        if (is_trash(cell_left, dir.flip()) || !can_move(cell_left, dir.flip(), MoveForce::Push)) && can_move_right {
                             prefered_dir = Some(dir);
                         }
                         else {
@@ -372,7 +373,7 @@ fn do_stones(grid: &mut Grid) {
                         }
                     }
                     else if let Some(cell_right) = cell_right {
-                        if (is_trash(cell_right, dir) || !can_move(cell_right, dir, MoveForce::Mover)) && can_move_left {
+                        if (is_trash(cell_right, dir) || !can_move(cell_right, dir, MoveForce::Push)) && can_move_left {
                             prefered_dir = Some(dir.flip());
                         }
                         else {
@@ -467,7 +468,7 @@ fn do_trashmovers(grid: &mut Grid) {
         if cell.id == TRASHMOVER && cell.direction == dir && !cell.updated {
             cell.updated = true;
             if let Some(pushed) = grid.get(x + off.x, y + off.y) {
-                if !can_move(pushed, dir, MoveForce::Mover) || is_trash(cell, dir) {
+                if !can_move(pushed, dir, MoveForce::Push) || is_trash(cell, dir) {
                     return;
                 }
             }

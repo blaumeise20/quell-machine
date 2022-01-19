@@ -2,6 +2,7 @@ use std::{ops::{Add, Sub, Rem, AddAssign, SubAssign}, fmt::Display};
 
 use speedy2d::dimen::Vector2;
 
+/// A direction of a cell.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
 	Right,
@@ -11,6 +12,7 @@ pub enum Direction {
 }
 
 impl Direction {
+    /// Turns the direction into degrees.
     #[inline]
 	pub fn to_degrees(self) -> f32 {
 		match self {
@@ -21,11 +23,13 @@ impl Direction {
 		}
 	}
 
+    /// Turns the direction into radians.
     #[inline(always)]
 	pub fn to_radians(self) -> f32 {
 		self.to_degrees().to_radians()
 	}
 
+    /// Turns the direction into a vector.
     #[inline]
 	pub fn to_vector(self) -> Vector2<isize> {
 		match self {
@@ -36,6 +40,7 @@ impl Direction {
 		}
 	}
 
+    /// Rotates the direction 180 degrees.
     #[inline]
 	pub fn flip(self) -> Direction {
 		match self {
@@ -46,6 +51,7 @@ impl Direction {
 		}
 	}
 
+    /// Rotates the direction clockwise.
     #[inline]
     pub fn rotate_left(self) -> Direction {
         match self {
@@ -56,6 +62,7 @@ impl Direction {
         }
     }
 
+    /// Rotates the direction counter-clockwise.
     #[inline]
     pub fn rotate_right(self) -> Direction {
         match self {
@@ -66,6 +73,7 @@ impl Direction {
         }
     }
 
+    /// Reduces the direction to a radius/range.
     #[inline(always)]
     pub fn shrink(self, radius: u8) -> Direction {
         self % radius

@@ -1,5 +1,6 @@
 use crate::game::cells::CellType;
 
+// helper for easier cell definitions
 macro_rules! celld {
     {$(
         $id_name:ident $id:literal {
@@ -23,6 +24,7 @@ macro_rules! celld {
         ];
     }
 }
+// hotbar structure definition
 macro_rules! hotbar {
     ($([$($name:ident),*]),* $(,)?) => {
         pub static HOTBAR_ITEMS: &[&[CellData]] = &[

@@ -1,13 +1,15 @@
 use speedy2d::dimen::Vector2;
 use crate::game::{direction::Direction, cells::{Cell, Grid}, cell_data::{WALL, SLIDE, MOVER, ORIENTATOR, TRASH, ENEMY, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, MOVLER, ONE_DIR, SLIDE_WALL, TRASHPULLER, GHOST, SUCKER}};
 
+/// A force a cell is moved with.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveForce {
-    Mover,
+    Push,
     Pull,
-    Mirror,
+    Swap,
 }
 
+/// The result when pushing a cell.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum PushResult {
     Moved,
@@ -15,6 +17,7 @@ pub enum PushResult {
     Trashed,
 }
 impl PushResult {
+    /// Returns whether the cell was moved.
     pub fn did_move(&self) -> bool {
         match self {
             PushResult::Moved => true,
@@ -22,6 +25,8 @@ impl PushResult {
             PushResult::Trashed => true,
         }
     }
+
+    /// Returns whether the cell was *not* trashed.
     pub fn did_move_survive(&self) -> bool {
         match self {
             PushResult::Moved => true,
@@ -31,18 +36,19 @@ impl PushResult {
     }
 }
 
+/// Checks if a cell can move in a certain direction with the given force.
 pub fn can_move(cell: &Cell, direction: Direction, force: MoveForce) -> bool {
     match cell.id {
         WALL | GHOST => false,
         SLIDE | SLIDE_WALL if cell.direction.shrink(2) != direction.shrink(2) => false,
         ONE_DIR if cell.direction != direction => false,
-        MIRROR if force == MoveForce::Mirror && cell.direction.shrink(2) == direction.shrink(2) => false,
-        CROSSMIRROR if force == MoveForce::Mirror => false,
+        MIRROR if force == MoveForce::Swap && cell.direction.shrink(2) == direction.shrink(2) => false,
+        CROSSMIRROR if force == MoveForce::Swap => false,
         _ => true,
     }
 }
 
-#[inline]
+/// Checks if a cell is a trash in the direction it is being pushed.
 pub fn is_trash(cell: &Cell, direction: Direction) -> bool {
     match cell.id {
         TRASH | ENEMY => true,
@@ -53,15 +59,20 @@ pub fn is_trash(cell: &Cell, direction: Direction) -> bool {
     }
 }
 
+/// Checks if a cell can be generated.
+#[inline]
 pub fn can_generate(cell: &Cell) -> bool {
     cell.id != GHOST
 }
 
+/// Pushes the specified cell in a direction. Returns whether the cell was moved.
+/// You can also specify a replacement cell that should be put where the old one was.
 pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>) -> PushResult {
     let mut tx = x;
     let mut ty = y;
     let Vector2 { x: ox, y: oy } = dir.to_vector();
 
+    // Check if the cell can be pushed.
     loop {
         if !grid.is_in_bounds(tx, ty) { return PushResult::NotMoved; }
 
@@ -78,7 +89,7 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
 
             if is_trash(cell, dir) { break; }
 
-            if !can_move(cell, dir, MoveForce::Mover) {
+            if !can_move(cell, dir, MoveForce::Push) {
                 return PushResult::NotMoved;
             }
 
@@ -92,29 +103,46 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
         if force == 0 { return PushResult::NotMoved; }
     }
 
+    // Push the cell and all following.
+    // Works like this:
+    //  >=#   replacement cell is air
+    //  ^
+    // replace cell with air and store the old cell in the replacement cell
+    // then go forward one cell
+    //   =#   replacement cell is mover
+    //   ^
+    // repeat ^
+    //   >#   replacement cell is slide
+    //   >=   replacement cell is push
+    //   >=#
+    // we moved forward one cell!
+
     let mut x = x;
     let mut y = y;
     let mut next_cell = pushing;
     let mut push_result = PushResult::Trashed;
     loop {
+        // Update mover cell `.updated`.
         if let Some(ref mut cell) = next_cell {
             if (cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER || cell.id == SPEED || cell.id == MOVLER) && cell.direction == dir {
                 cell.updated = true;
             }
         }
 
+        // When trash then break.
         if let Some(cell) = grid.get_mut(x, y) {
             if cell.id == ENEMY {
-                // cell is deleted and enemy destroyed
+                // Cell is deleted and enemy destroyed.
                 grid.delete(x, y);
                 break;
             }
             else if is_trash(cell, dir) {
-                // cell is trashed
+                // Cell is trashed.
                 break;
             }
         }
 
+        // Push cell and store current one in next push replacement.
         push_result = PushResult::Moved;
         let old_cell = grid.take(x, y);
         grid.set_cell(x, y, next_cell);
@@ -127,12 +155,21 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
     push_result
 }
 
+/// Pulls the cell in a specific direction. Also pulls all cells behind it.
 pub fn pull(grid: &mut Grid, x: isize, y: isize, dir: Direction) {
     let opposite_dir = dir.flip();
     let Vector2 { x: ox, y: oy } = dir.to_vector();
     let mut cx = x + ox;
     let mut cy = y + oy;
     let mut force = 1;
+
+    // Pull the cells. Doesn't have replacement cells.
+    // Works like this:
+    // ##>
+    // ## >
+    // # #>
+    //  ##>
+    // Done!
 
     loop {
         let cell = grid.get_mut(cx - ox, cy - oy);
@@ -179,6 +216,7 @@ pub fn pull(grid: &mut Grid, x: isize, y: isize, dir: Direction) {
     }
 }
 
+// Checks if a cell can be rotated from a specific direction.
 pub fn can_rotate(cell: &Cell, side: Direction) -> bool {
     match cell.id {
         WALL | GHOST => false,
@@ -188,6 +226,7 @@ pub fn can_rotate(cell: &Cell, side: Direction) -> bool {
     }
 }
 
+// internal helper
 #[inline]
 unsafe fn rotate(cell: &mut Cell, dir: Direction, side: Direction) -> bool {
     if can_rotate(cell, side) {
@@ -199,6 +238,7 @@ unsafe fn rotate(cell: &mut Cell, dir: Direction, side: Direction) -> bool {
     }
 }
 
+/// Rotates a cell by a specific amount.
 pub fn rotate_by(grid: &mut Grid, x: isize, y: isize, dir: Direction, side: Direction) -> bool { unsafe {
     let cell = grid.get_mut(x, y);
     if let Some(cell) = cell {
@@ -209,6 +249,7 @@ pub fn rotate_by(grid: &mut Grid, x: isize, y: isize, dir: Direction, side: Dire
     }
 } }
 
+/// Sets the direction of a cell.
 pub fn rotate_to(grid: &mut Grid, x: isize, y: isize, dir: Direction, side: Direction) -> bool { unsafe {
     let cell = grid.get_mut(x, y);
     if let Some(cell) = cell {
