@@ -226,6 +226,12 @@ celld! {
         sides 4,
         texture "tunnel"
     }
+    FIXED_PULLSHER 33 {
+        "Fixed Pullsher",
+        "Like tunnel, but pulls from behind.",
+        sides 4,
+        texture "fixed_pullsher"
+    }
 }
 
 hotbar![
@@ -236,7 +242,7 @@ hotbar![
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY, SUCKER],
     [MAILBOX, POSTOFFICE],
-    [MIRROR, CROSSMIRROR, TUNNEL],
+    [MIRROR, CROSSMIRROR, TUNNEL, FIXED_PULLSHER],
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

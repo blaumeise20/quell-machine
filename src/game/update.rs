@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180, TUNNEL}};
+use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180, TUNNEL, FIXED_PULLSHER}};
 
 /// Order in which cell directions are updated.
 static UPDATE_DIRECTIONS: [Direction; 4] = [
@@ -73,6 +73,7 @@ pub fn update(grid: &mut Grid) {
     subtick!(MIRROR          : do_mirrors);
     subtick!(CROSSMIRROR     : do_crossmirrors);
     subtick!(TUNNEL          : do_tunnels);
+    subtick!(FIXED_PULLSHER  : do_fixed_pullsher);
     subtick!(SUCKER          : do_suckers);
     subtick!(GENERATOR       : do_gens);
     subtick!(GENERATOR_CW, GENERATOR_CCW: do_angled_gens);
@@ -166,6 +167,23 @@ fn do_tunnels(grid: &mut Grid) {
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
                 if can_move(cell, dir, MoveForce::Push) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy())).did_move() {
                     grid.set_cell(x + cell_offset.x, y + cell_offset.y, None);
+                }
+            }
+        }
+    });
+}
+
+fn do_fixed_pullsher(grid: &mut Grid) {
+    loop_each_dir!(for dir {
+        let push_offset = dir.to_vector();
+        let cell_offset = dir.flip().to_vector();
+    }, x, y, cell in grid; {
+        if cell.id == FIXED_PULLSHER && cell.direction == dir && !cell.updated {
+            cell.updated = true;
+            if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
+                if can_move(cell, dir, MoveForce::Push) && !is_trash(cell, dir.flip()) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy())).did_move() {
+                    grid.set_cell(x + cell_offset.x, y + cell_offset.y, None);
+                    pull(grid, x + cell_offset.x * 2, y + cell_offset.y * 2, dir);
                 }
             }
         }
