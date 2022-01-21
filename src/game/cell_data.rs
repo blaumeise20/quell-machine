@@ -220,6 +220,12 @@ celld! {
         sides 1,
         texture "rotator_180"
     }
+    TUNNEL 32 {
+        "Tunnel",
+        "Tries to push the cell behind to it's front.",
+        sides 4,
+        texture "tunnel"
+    }
 }
 
 hotbar![
@@ -230,7 +236,7 @@ hotbar![
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY, SUCKER],
     [MAILBOX, POSTOFFICE],
-    [MIRROR, CROSSMIRROR],
+    [MIRROR, CROSSMIRROR, TUNNEL],
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

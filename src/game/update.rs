@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180}};
+use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180, TUNNEL}};
 
 /// Order in which cell directions are updated.
 static UPDATE_DIRECTIONS: [Direction; 4] = [
@@ -72,6 +72,7 @@ pub fn update(grid: &mut Grid) {
 
     subtick!(MIRROR          : do_mirrors);
     subtick!(CROSSMIRROR     : do_crossmirrors);
+    subtick!(TUNNEL          : do_tunnels);
     subtick!(SUCKER          : do_suckers);
     subtick!(GENERATOR       : do_gens);
     subtick!(GENERATOR_CW, GENERATOR_CCW: do_angled_gens);
@@ -150,6 +151,22 @@ fn do_crossmirrors(grid: &mut Grid) {
                 let cell_up = cell_left.take();
                 grid.set_cell(x, y + 1, cell_down.take());
                 grid.set_cell(x, y - 1, cell_up);
+            }
+        }
+    });
+}
+
+fn do_tunnels(grid: &mut Grid) {
+    loop_each_dir!(for dir {
+        let push_offset = dir.to_vector();
+        let cell_offset = dir.flip().to_vector();
+    }, x, y, cell in grid; {
+        if cell.id == TUNNEL && cell.direction == dir && !cell.updated {
+            cell.updated = true;
+            if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
+                if can_move(cell, dir, MoveForce::Push) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy())).did_move() {
+                    grid.set_cell(x + cell_offset.x, y + cell_offset.y, None);
+                }
             }
         }
     });
