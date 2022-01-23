@@ -1,3 +1,5 @@
+use std::mem;
+
 use super::direction::Direction;
 
 pub const DEFAULT_GRID_WIDTH: usize = 100;
@@ -102,7 +104,7 @@ impl Grid {
     #[inline]
     pub fn get<'a, 'b: 'a>(&'a self, x: isize, y: isize) -> &'b Option<Cell> {
         if self.is_in_bounds(x, y) {
-            unsafe { &*(&self.cells[y as usize * self.width + x as usize] as *const _) }
+            unsafe { mem::transmute(&self.cells[y as usize * self.width + x as usize]) }
         }
         else {
             &None
@@ -122,7 +124,7 @@ impl Grid {
     #[inline]
     pub fn get_mut<'a, 'b: 'a>(&'a mut self, x: isize, y: isize) -> &'b mut Option<Cell> {
         if self.is_in_bounds(x, y) {
-            unsafe { &mut *(&mut self.cells[y as usize * self.width + x as usize] as *mut _) }
+            unsafe { mem::transmute(&mut self.cells[y as usize * self.width + x as usize]) }
         }
         else {
             unsafe { &mut DUMMY_CELL }
