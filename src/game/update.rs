@@ -6,8 +6,8 @@ use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull
 static UPDATE_DIRECTIONS: [Direction; 4] = [
     Direction::Right,
     Direction::Left,
-    Direction::Down,
     Direction::Up,
+    Direction::Down,
 ];
 
 macro_rules! loop_each {
