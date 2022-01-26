@@ -52,6 +52,7 @@ macro_rules! loop_each_dir {
     };
 }
 
+/// Performs a single update step.
 pub fn update(grid: &mut Grid) {
     let mut cells = HashSet::new();
 
@@ -64,33 +65,35 @@ pub fn update(grid: &mut Grid) {
         }
     }
 
-    macro_rules! subtick {
-        ($($cell:ident),*: $fn_name:ident) => {
-            if $(cells.contains(&$cell))||* { $fn_name(grid); }
+    macro_rules! subticks {
+        ($( $($cell:ident),*: $fn_name:ident)* ) => {
+            $( if $(cells.contains(&$cell))||* { $fn_name(grid); } )*
         }
     }
 
-    subtick!(MIRROR          : do_mirrors);
-    subtick!(CROSSMIRROR     : do_crossmirrors);
-    subtick!(TUNNEL          : do_tunnels);
-    subtick!(FIXED_PULLSHER  : do_fixed_pullsher);
-    subtick!(SUCKER          : do_suckers);
-    subtick!(GENERATOR       : do_gens);
-    subtick!(GENERATOR_CW, GENERATOR_CCW: do_angled_gens);
-    subtick!(PHYSICAL_GENERATOR: do_physical_gens);
-    subtick!(GENERATOR_CROSS : do_cross_gens);
-    subtick!(REPLICATOR      : do_replicators);
-    subtick!(POSTOFFICE      : do_postoffices);
-    subtick!(ROTATOR_CW, ROTATOR_CCW, ROTATOR_180: do_rotators);
-    subtick!(ORIENTATOR      : do_orientators);
-    subtick!(STONE           : do_stones);
-    subtick!(MAILBOX         : do_mailboxes);
-    subtick!(PULLSHER        : do_pullshers);
-    subtick!(TRASHPULLER     : do_trashpullers);
-    subtick!(PULLER          : do_pullers);
-    subtick!(TRASHMOVER      : do_trashmovers);
-    subtick!(MOVER           : do_movers);
-    subtick!(SPEED           : do_speeds);
+    subticks! {
+        MIRROR          : do_mirrors
+        CROSSMIRROR     : do_crossmirrors
+        TUNNEL          : do_tunnels
+        FIXED_PULLSHER  : do_fixed_pullsher
+        SUCKER          : do_suckers
+        GENERATOR       : do_gens
+        GENERATOR_CW, GENERATOR_CCW: do_angled_gens
+        PHYSICAL_GENERATOR: do_physical_gens
+        GENERATOR_CROSS : do_cross_gens
+        REPLICATOR      : do_replicators
+        POSTOFFICE      : do_postoffices
+        ROTATOR_CW, ROTATOR_CCW, ROTATOR_180: do_rotators
+        ORIENTATOR      : do_orientators
+        STONE           : do_stones
+        MAILBOX         : do_mailboxes
+        PULLSHER        : do_pullshers
+        TRASHPULLER     : do_trashpullers
+        PULLER          : do_pullers
+        TRASHMOVER      : do_trashmovers
+        MOVER           : do_movers
+        SPEED           : do_speeds
+    }
 }
 
 fn do_mirrors(grid: &mut Grid) {
