@@ -17,7 +17,7 @@ pub static mut screen_zoom: f32 = 1.0;
 pub static mut SCREEN_WIDTH: f32 = 800.0;
 pub static mut SCREEN_HEIGHT: f32 = 600.0;
 
-pub const CELL_SIZE: f32 = 40.0;
+const CELL_SIZE: f32 = 40.0;
 const CELL_SPEED: f32 = 10.0;
 
 const HOTBAR_HEIGHT: f32 = 90.0;
@@ -27,6 +27,11 @@ const HOTBAR_CELL_SPACING: f32 = (HOTBAR_HEIGHT - HOTBAR_CELL_SIZE) / 2.0;
 const TOOLTIP_WIDTH: f32 = 400.0;
 const TOOLTIP_HEIGHT: f32 = 200.0;
 const TOOLTIP_PADDING: f32 = 20.0;
+
+#[cfg(target_os = "macos")]
+const COMMAND_KEY: VirtualKeyCode = VirtualKeyCode::LWin;
+#[cfg(not(target_os = "macos"))]
+const COMMAND_KEY: VirtualKeyCode = VirtualKeyCode::LControl;
 
 type Text = Rc<FormattedTextBlock>;
 
@@ -44,6 +49,7 @@ pub struct WinHandler {
     keys: HashSet<VirtualKeyCode>,
     mouse: Option<MouseButton>,
     mouse_pos: Vector2<f32>,
+    undo_stack: CellUndoStack,
 
     help_text: Option<Text>,
     hotbar_item_text: Option<HashMap<CellType, Tooltip>>,
@@ -59,6 +65,7 @@ pub struct WinHandler {
     show_help: bool,
     tick_times: [f32; 10],
     is_initial: bool,
+    threaded: bool,
 }
 
 impl WinHandler {
@@ -71,6 +78,7 @@ impl WinHandler {
             keys: HashSet::new(),
             mouse: None,
             mouse_pos: Vector2::new(0.0, 0.0),
+            undo_stack: CellUndoStack::new(),
 
             help_text: None,
             hotbar_item_text: None,
@@ -86,6 +94,7 @@ impl WinHandler {
             show_help: true,
             tick_times: [0.0; 10],
             is_initial: true,
+            threaded: false,
         }
     }
 }
@@ -124,6 +133,24 @@ impl WindowHandler for WinHandler {
                         .with_wrap_to_width(SCREEN_WIDTH, TextAlignment::Center)
                 ));
 
+                // self.hotbar_item_text = Some(HOTBAR_ITEMS.iter().flat_map(|a| {
+                //     a.iter().map(|cell_type| {
+                //         (cell_type.id, (
+                //             font.layout_text(
+                //                 cell_type.name,
+                //                 HOTBAR_CELL_SIZE / 1.5,
+                //                 TextOptions::new()
+                //                     .with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left)
+                //             ),
+                //             font.layout_text(
+                //                 cell_type.description,
+                //                 HOTBAR_CELL_SIZE / 2.0,
+                //                 TextOptions::new()
+                //                     .with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left)
+                //             ),
+                //         ))
+                //     })
+                // }).collect());
                 self.hotbar_item_text = Some(HOTBAR_ITEMS.iter().flat_map(|a| {
                     a.iter().map(|cell_type| {
                         (cell_type.id, Tooltip::new(
@@ -242,18 +269,23 @@ impl WindowHandler for WinHandler {
                                 let y = y + oy;
                                 draw_ghost_cell(assets, g, x, y, &cell);
                                 if do_place {
+                                    let mut place_cell = place_cell.clone();
                                     let cell = grid.get_mut(x, y);
                                     if let Some(cell) = cell {
                                         if cell.id == MAILBOX {
-                                            if let Some(ref place_cell) = place_cell {
+                                            if let Some(ref mut place_cell) = place_cell {
                                                 if place_cell.id != MAILBOX {
-                                                    cell.contained_cell = Some((place_cell.id, place_cell.direction - cell.direction));
-                                                    continue;
+                                                    let contained = (place_cell.id, place_cell.direction - cell.direction);
+                                                    *place_cell = cell.copy();
+                                                    place_cell.contained_cell = Some(contained);
                                                 }
                                             }
                                         }
                                     }
-                                    *cell = place_cell.clone();
+                                    if place_cell != *cell {
+                                        self.undo_stack.insert(x, y, cell.clone());
+                                        *cell = place_cell;
+                                    }
                                 }
                             }
                         }
@@ -266,18 +298,23 @@ impl WindowHandler for WinHandler {
                             let y = y + oy;
                             draw_ghost_cell(assets, g, x, y, &cell);
                             if do_place {
+                                let mut place_cell = place_cell.clone();
                                 let cell = grid.get_mut(x, y);
                                 if let Some(cell) = cell {
                                     if cell.id == MAILBOX {
-                                        if let Some(ref place_cell) = place_cell {
+                                        if let Some(ref mut place_cell) = place_cell {
                                             if place_cell.id != MAILBOX {
-                                                cell.contained_cell = Some((place_cell.id, place_cell.direction - cell.direction));
-                                                continue;
+                                                let contained = (place_cell.id, place_cell.direction - cell.direction);
+                                                *place_cell = cell.copy();
+                                                place_cell.contained_cell = Some(contained);
                                             }
                                         }
                                     }
                                 }
-                                *cell = place_cell.clone();
+                                if place_cell != *cell {
+                                    self.undo_stack.insert(x, y, cell.clone());
+                                    *cell = place_cell;
+                                }
                             }
                         }
                     }
@@ -441,10 +478,22 @@ impl WindowHandler for WinHandler {
         helper.request_redraw();
 	}
 
-    fn on_key_down(&mut self, _: &mut WindowHelper<()>, virtual_key_code: Option<VirtualKeyCode>, _: KeyScancode) {
+    fn on_key_down(&mut self, window: &mut WindowHelper<()>, virtual_key_code: Option<VirtualKeyCode>, _: KeyScancode) {
         if let Some(key) = virtual_key_code {
+            println!("{:?}", key);
             self.keys.insert(key);
             match key {
+                VirtualKeyCode::Q if self.keys.contains(&COMMAND_KEY) => {
+                    window.terminate_loop();
+                },
+
+                VirtualKeyCode::Z if self.keys.contains(&COMMAND_KEY) => {
+                    if let Some(action) = self.undo_stack.pop() {
+                        action.undo_on(unsafe { &mut grid });
+                    }
+                },
+
+
                 VirtualKeyCode::Escape => self.show_help = !self.show_help,
 
                 VirtualKeyCode::Space => { self.running = !self.running; },
@@ -477,6 +526,13 @@ impl WindowHandler for WinHandler {
                     let text = unsafe { export_q2(&grid) };
                     clip.set_contents(text).unwrap();
                 },
+
+                VirtualKeyCode::M => {
+                    if !self.running {
+                        self.threaded = !self.threaded;
+                    }
+                },
+
                 _ => {},
             }
         }
@@ -577,6 +633,11 @@ impl WindowHandler for WinHandler {
             );
             if is_inside(tools_rect, self.mouse_pos) {
                 self.open_item_menu = Some(len);
+                self.place = false;
+            }
+
+            if self.place {
+                self.undo_stack.start();
             }
         }
 
@@ -654,6 +715,14 @@ fn scale_tool(tool: &mut Tool, change: isize) {
             (value, Tool::Rect(_)) => Tool::Rect(value),
             (value, Tool::Circle(_)) => Tool::Circle(value),
         }
+    }
+}
+
+fn tool_to_index(tool: Tool) -> usize {
+    match tool {
+        Tool::Place => 0,
+        Tool::Rect(_) => 1,
+        Tool::Circle(_) => 2,
     }
 }
 
@@ -847,10 +916,44 @@ fn is_inside<T: PartialOrd>(rect: Rectangle<T>, point: Vector2<T>) -> bool {
         rect.bottom_right().x >= point.x && rect.bottom_right().y >= point.y
 }
 
-fn tool_to_index(tool: Tool) -> usize {
-    match tool {
-        Tool::Place => 0,
-        Tool::Rect(_) => 1,
-        Tool::Circle(_) => 2,
+const UNDO_STACK_SIZE: usize = 20;
+struct CellUndoStack(Vec<UndoAction>);
+
+impl CellUndoStack {
+    fn new() -> Self {
+        CellUndoStack(Vec::new())
+    }
+
+    fn start(&mut self) {
+        self.0.push(UndoAction::new());
+        if self.0.len() > UNDO_STACK_SIZE {
+            self.0.remove(0);
+        }
+    }
+
+    fn insert(&mut self, x: isize, y: isize, cell: Option<Cell>) {
+        self.0.last_mut().unwrap().insert((x, y), cell);
+    }
+
+    fn pop(&mut self) -> Option<UndoAction> {
+        self.0.pop()
+    }
+}
+
+struct UndoAction(HashMap<(isize, isize), Option<Cell>>);
+
+impl UndoAction {
+    fn new() -> Self {
+        UndoAction(HashMap::new())
+    }
+
+    fn insert(&mut self, pos: (isize, isize), cell: Option<Cell>) {
+        self.0.insert(pos, cell);
+    }
+
+    fn undo_on(&self, action_grid: &mut Grid) {
+        for (pos, cell) in self.0.iter() {
+            action_grid.set_cell(pos.0, pos.1, cell.clone());
+        }
     }
 }

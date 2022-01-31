@@ -10,7 +10,7 @@ pub type CellType = u16;
 static mut DUMMY_CELL: Option<Cell> = None;
 
 /// Represents a cell on a grid.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Cell {
     pub id: CellType,
     pub direction: Direction,
