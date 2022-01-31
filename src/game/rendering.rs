@@ -46,7 +46,7 @@ pub struct WinHandler {
     mouse_pos: Vector2<f32>,
 
     help_text: Option<Text>,
-    hotbar_item_text: Option<HashMap<CellType, (Text, Text)>>,
+    hotbar_item_text: Option<HashMap<CellType, Tooltip>>,
 
     active_item: usize,
     hotbar_state: Vec<usize>,
@@ -126,19 +126,11 @@ impl WindowHandler for WinHandler {
 
                 self.hotbar_item_text = Some(HOTBAR_ITEMS.iter().flat_map(|a| {
                     a.iter().map(|cell_type| {
-                        (cell_type.id, (
-                            font.layout_text(
-                                cell_type.name,
-                                HOTBAR_CELL_SIZE / 1.5,
-                                TextOptions::new()
-                                    .with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left)
-                            ),
-                            font.layout_text(
-                                cell_type.description,
-                                HOTBAR_CELL_SIZE / 2.0,
-                                TextOptions::new()
-                                    .with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left)
-                            ),
+                        (cell_type.id, Tooltip::new(
+                            &font,
+                            cell_type.name,
+                            Some(format!("ID: {}", cell_type.id)),
+                            Some(cell_type.description),
                         ))
                     })
                 }).collect());
@@ -375,7 +367,7 @@ impl WindowHandler for WinHandler {
                         );
                         if is_inside(rect.clone(), self.mouse_pos) {
                             let position = rect.top_right() + Vector2::new(HOTBAR_CELL_SPACING, 0.0);
-                            draw_tooltip(g, position, self.hotbar_item_text.as_ref().unwrap().get(&id).unwrap());
+                            self.hotbar_item_text.as_ref().unwrap().get(&id).unwrap().draw(g, position);
                         }
                     }
                 }
@@ -717,6 +709,7 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
         }
     }
 }
+
 unsafe fn draw_ghost_cell(assets: &Assets, g: &mut Graphics2D, x: isize, y: isize, cell: &Cell) {
     let screen_w_half = SCREEN_WIDTH / 2.0;
     let screen_h_half = SCREEN_HEIGHT / 2.0;
@@ -737,23 +730,88 @@ unsafe fn draw_ghost_cell(assets: &Assets, g: &mut Graphics2D, x: isize, y: isiz
     );
 }
 
-fn draw_tooltip(g: &mut Graphics2D, pos: Vector2<f32>, (name, description): &(Text, Text)) {
-    let rect = Rectangle::new(
-        pos,
-        pos + Vector2::new(TOOLTIP_WIDTH, TOOLTIP_HEIGHT)
+struct Tooltip {
+    title: Text,
+    data: Option<Text>,
+    description: Option<Text>,
+}
+
+const TITLE_SIZE: f32 = 30.0;
+const DATA_SIZE: f32 = 17.0;
+const DESCRIPTION_SIZE: f32 = 23.0;
+impl Tooltip {
+    pub fn new(font: &Font, title: impl ToString, data: Option<impl ToString>, description: Option<impl ToString>) -> Tooltip {
+        Tooltip {
+            title: font.layout_text(&title.to_string(), TITLE_SIZE, TextOptions::new().with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left)),
+            data: data.map(|d| font.layout_text(&d.to_string(), DATA_SIZE, TextOptions::new().with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left))),
+            description: description.map(|d| font.layout_text(&d.to_string(), DESCRIPTION_SIZE, TextOptions::new().with_wrap_to_width(TOOLTIP_WIDTH - TOOLTIP_PADDING * 2.0, TextAlignment::Left))),
+        }
+    }
+
+    pub fn draw(&self, g: &mut Graphics2D, draw_position: Vector2<f32>) {
+        let rect = Rectangle::new(
+            draw_position,
+            draw_position + Vector2::new(TOOLTIP_WIDTH, TOOLTIP_HEIGHT)
+        );
+        g.draw_rectangle(
+            rect.clone(),
+            Color::from_hex_argb(0xcc555555),
+        );
+        draw_stroke_rect(g, rect, Color::from_hex_argb(0xff111111), 2.0);
+
+        g.draw_text(
+            draw_position + Vector2::new(TOOLTIP_PADDING, TOOLTIP_PADDING),
+            Color::WHITE,
+            &self.title,
+        );
+
+        let mut text_position = draw_position + Vector2::new(TOOLTIP_PADDING, TOOLTIP_PADDING + self.title.height() + 5.0);
+
+        if let Some(ref data) = self.data {
+            g.draw_text(
+                text_position,
+                Color::WHITE,
+                data,
+            );
+            text_position.y += data.height() + 5.0;
+        }
+
+        text_position.y += 5.0;
+
+        if let Some(ref description) = self.description {
+            g.draw_text(
+                text_position,
+                Color::WHITE,
+                description,
+            );
+        }
+    }
+}
+
+fn draw_stroke_rect(g: &mut Graphics2D, rect: Rectangle, color: Color, stroke_width: f32) {
+    g.draw_line(
+        *rect.top_left(),
+        rect.top_right(),
+        stroke_width,
+        color,
     );
-    g.draw_rectangle(
-        rect,
-        Color::from_hex_argb(0xaa555555));
-    g.draw_text(
-        pos + Vector2::new(TOOLTIP_PADDING, TOOLTIP_PADDING),
-        Color::WHITE,
-        name
+    g.draw_line(
+        rect.top_right(),
+        *rect.bottom_right(),
+        stroke_width,
+        color,
     );
-    g.draw_text(
-        pos + Vector2::new(TOOLTIP_PADDING, TOOLTIP_PADDING + name.height()),
-        Color::WHITE,
-        description
+    g.draw_line(
+        *rect.bottom_right(),
+        rect.bottom_left(),
+        stroke_width,
+        color,
+    );
+    g.draw_line(
+        rect.bottom_left(),
+        *rect.top_left(),
+        stroke_width,
+        color,
     );
 }
 
