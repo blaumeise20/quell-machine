@@ -492,7 +492,7 @@ fn do_pullers(grid: &mut Grid) {
     }, x, y, cell in grid; {
         if cell.id == PULLER && cell.direction == dir && !cell.updated {
             cell.updated = true;
-            if grid.get(x + off.x, y + off.y).is_none() {
+            if grid.is_in_bounds(x + off.x, y + off.y) && grid.get(x + off.x, y + off.y).is_none() {
                 pull(grid, x, y, dir);
             }
         }
