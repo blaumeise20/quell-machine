@@ -94,6 +94,8 @@ pub fn update(grid: &mut Grid) {
         MOVER           : do_movers
         SPEED           : do_speeds
     }
+
+    grid.tick_count += 1;
 }
 
 fn do_mirrors(grid: &mut Grid) {
