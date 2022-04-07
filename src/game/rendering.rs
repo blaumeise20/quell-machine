@@ -62,6 +62,7 @@ pub struct WinHandler {
     placement_tool: Tool,
 
     running: bool,
+    running_state: Option<UpdateState>,
     show_help: bool,
     tick_times: [f32; 10],
     is_initial: bool,
@@ -91,6 +92,7 @@ impl WinHandler {
             placement_tool: Tool::Place,
 
             running: false,
+            running_state: None,
             show_help: true,
             tick_times: [0.0; 10],
             is_initial: true,
@@ -209,11 +211,17 @@ impl WindowHandler for WinHandler {
         let assets = self.assets.as_ref().unwrap();
 		g.clear_screen(Color::from_hex_rgb(0x000000));
 
-        if self.running {
+        if self.running && self.running_state.is_none() {
             let start_time = Instant::now();
             unsafe { do_tick(&mut self.is_initial); }
             self.tick_times.rotate_left(1);
             self.tick_times[9] = start_time.elapsed().as_secs_f32() * 1000.0;
+        }
+        if let Some(state) = &self.running_state {
+            unsafe {
+                let state = state.lock().unwrap();
+                grid = state.1.clone();
+            }
         }
 
         unsafe {
@@ -482,10 +490,42 @@ impl WindowHandler for WinHandler {
             &assets.font.layout_text(&format!("Tick time: {}", self.tick_times.iter().sum::<f32>() / 10.0), 17.0, TextOptions::new()),
         );
 
+        // separate thread updating
+        if self.threaded {
+            g.draw_text(
+                Vector2::new(10.0, 50.0),
+                Color::WHITE,
+                &assets.font.layout_text("Separate thread updating enabled", 17.0, TextOptions::new()),
+            );
+        }
+
         helper.request_redraw();
 	}
 
     fn on_key_down(&mut self, window: &mut WindowHelper<()>, virtual_key_code: Option<VirtualKeyCode>, _: KeyScancode) {
+        fn set_running(this: &mut WinHandler, running: bool) {
+            if running && this.is_initial {
+                this.is_initial = false;
+                unsafe { initial = grid.clone(); }
+            }
+
+            if this.threaded {
+                if !running {
+                    if let Some(state) = &this.running_state {
+                        state.lock().unwrap().0 = false;
+                        this.running_state = None;
+                    }
+                }
+                this.running = running;
+                if this.running && this.running_state.is_none() {
+                    this.running_state = Some(run_update_loop(unsafe { initial.clone() }, unsafe { grid.clone() }));
+                }
+            }
+            else {
+                this.running = running;
+            }
+        }
+
         if let Some(key) = virtual_key_code {
             println!("{:?}", key);
             self.keys.insert(key);
@@ -500,12 +540,17 @@ impl WindowHandler for WinHandler {
                     }
                 },
 
-
                 VirtualKeyCode::Escape => self.show_help = !self.show_help,
 
-                VirtualKeyCode::Space => { self.running = !self.running; },
-                VirtualKeyCode::G => { self.running = false; unsafe { do_tick(&mut self.is_initial); } },
-                VirtualKeyCode::T => { if !self.is_initial { unsafe { self.running = false; self.is_initial = true; grid = initial.clone(); } } },
+                VirtualKeyCode::Space => { set_running(self, !self.running) },
+                VirtualKeyCode::G => { if !self.running { unsafe { do_tick(&mut self.is_initial); } } },
+                VirtualKeyCode::T => {
+                    if !self.is_initial {
+                        set_running(self, false);
+                        unsafe { grid = initial.clone(); }
+                        self.is_initial = true;
+                    }
+                },
 
                 VirtualKeyCode::Q => self.direction -= 1,
                 VirtualKeyCode::E => self.direction += 1,
@@ -699,10 +744,7 @@ impl WindowHandler for WinHandler {
 }
 
 unsafe fn do_tick(is_initial: &mut bool) {
-    if *is_initial {
-        *is_initial = false;
-        initial = grid.clone();
-    }
+
     update(&mut grid);
 }
 

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::{Arc, Mutex}, thread, time::{Instant, Duration}};
 
 use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180, TUNNEL, FIXED_PULLSHER}};
 
@@ -50,6 +50,33 @@ macro_rules! loop_each_dir {
             }
         }
     };
+}
+
+pub type UpdateState = Arc<Mutex<(/*running*/ bool, Grid, /*repeat count*/ u32)>>;
+
+pub fn run_update_loop(initial: Grid, grid: Grid) -> UpdateState {
+    let state = Arc::new(Mutex::new((true, grid.clone(), 0)));
+
+    let s = state.clone();
+    thread::spawn(move || {
+        let mut grid = grid;
+
+        loop {
+            let start = Instant::now();
+            update(&mut grid);
+            let elapsed = start.elapsed();
+            const MILLIS: u64 = 200;
+            if elapsed <= Duration::from_millis(MILLIS) {
+                thread::sleep(Duration::from_millis(MILLIS) - elapsed);
+            }
+
+            let mut s = s.lock().unwrap();
+            s.1 = grid.clone();
+            if !s.0 { break; }
+        }
+    });
+
+    state
 }
 
 /// Performs a single update step.
