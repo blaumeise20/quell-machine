@@ -151,6 +151,18 @@ impl Grid {
         }
     }
 
+    /// Tries to set a cell at the specified index.
+    #[inline(always)]
+    pub fn try_set(&mut self, ix: usize, cell: Option<Cell>) -> bool {
+        if ix < self.width * self.height {
+            self.cells[ix] = cell;
+            true
+        }
+        else {
+            false
+        }
+    }
+
     /// Replaces the cell at the coordinate with air.
     #[inline(always)]
     pub fn delete(&mut self, x: isize, y: isize) {
