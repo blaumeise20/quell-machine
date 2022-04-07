@@ -67,10 +67,12 @@ pub fn can_generate(cell: &Cell) -> bool {
 
 /// Pushes the specified cell in a direction. Returns whether the cell was moved.
 /// You can also specify a replacement cell that should be put where the old one was.
-pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>) -> PushResult {
+pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usize, pushing: Option<Cell>, setupdated: bool) -> PushResult {
     let mut tx = x;
     let mut ty = y;
-    let Vector2 { x: ox, y: oy } = dir.to_vector();
+
+    let orig_dir = dir;
+    let mut dir = dir;
 
     // Check if the cell can be pushed.
     loop {
@@ -93,6 +95,7 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
                 return PushResult::NotMoved;
             }
 
+            let Vector2 { x: ox, y: oy } = dir.to_vector();
             tx += ox;
             ty += oy;
         }
@@ -101,6 +104,7 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
         }
 
         if force == 0 { return PushResult::NotMoved; }
+        if tx == x && ty == y && dir == orig_dir { break; }
     }
 
     // Push the cell and all following.
@@ -117,20 +121,21 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
     //   >=#
     // we moved forward one cell!
 
+    dir = orig_dir;
     let mut x = x;
     let mut y = y;
     let mut next_cell = pushing;
     let mut push_result = PushResult::Trashed;
     loop {
-        // Update mover cell `.updated`.
         if let Some(ref mut cell) = next_cell {
-            if (cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER || cell.id == SPEED || cell.id == MOVLER) && cell.direction == dir {
+            // Update mover cell `.updated`.
+            if (cell.id == MOVER || cell.id == PULLER || cell.id == PULLSHER || cell.id == TRASHMOVER || cell.id == SPEED || cell.id == MOVLER) && cell.direction == dir && setupdated {
                 cell.updated = true;
             }
         }
 
-        // When trash then break.
         if let Some(cell) = grid.get_mut(x, y) {
+            // When trash then break.
             if cell.id == ENEMY {
                 // Cell is deleted and enemy destroyed.
                 grid.delete(x, y);
@@ -148,6 +153,8 @@ pub fn push(grid: &mut Grid, x: isize, y: isize, dir: Direction, mut force: usiz
         grid.set_cell(x, y, next_cell);
         next_cell = old_cell;
         if tx == x && ty == y { break; }
+
+        let Vector2 { x: ox, y: oy } = dir.to_vector();
         x += ox;
         y += oy;
     }

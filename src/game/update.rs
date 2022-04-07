@@ -197,7 +197,7 @@ fn do_tunnels(grid: &mut Grid) {
         if cell.id == TUNNEL && cell.direction == dir && !cell.updated {
             cell.updated = true;
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                if can_move(cell, dir, MoveForce::Push) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy())).did_move() {
+                if can_move(cell, dir, MoveForce::Push) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), true).did_move() {
                     grid.set_cell(x + cell_offset.x, y + cell_offset.y, None);
                 }
             }
@@ -213,7 +213,7 @@ fn do_fixed_pullsher(grid: &mut Grid) {
         if cell.id == FIXED_PULLSHER && cell.direction == dir && !cell.updated {
             cell.updated = true;
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                if can_move(cell, dir, MoveForce::Push) && !is_trash(cell, dir.flip()) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy())).did_move() {
+                if can_move(cell, dir, MoveForce::Push) && !is_trash(cell, dir.flip()) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), true).did_move() {
                     grid.set_cell(x + cell_offset.x, y + cell_offset.y, None);
                     pull(grid, x + cell_offset.x * 2, y + cell_offset.y * 2, dir);
                 }
@@ -242,7 +242,7 @@ fn do_gens(grid: &mut Grid) {
             cell.updated = true;
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
                 if can_generate(cell) {
-                    push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()));
+                    push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), false);
                 }
             }
         }
@@ -259,7 +259,7 @@ fn do_angled_gens(grid: &mut Grid) {
                 let mut cell = cell.copy();
                 cell.direction = cell.direction.rotate_right();
                 let push_offset = dir.rotate_right().to_vector();
-                push(grid, x + push_offset.x, y + push_offset.y, dir.rotate_right(), 1, Some(cell));
+                push(grid, x + push_offset.x, y + push_offset.y, dir.rotate_right(), 1, Some(cell), false);
             }
         }
         else if cell.id == GENERATOR_CCW && cell.direction == dir && !cell.updated {
@@ -268,7 +268,7 @@ fn do_angled_gens(grid: &mut Grid) {
                 let mut cell = cell.copy();
                 cell.direction = cell.direction.rotate_left();
                 let push_offset = dir.rotate_left().to_vector();
-                push(grid, x + push_offset.x, y + push_offset.y, dir.rotate_left(), 1, Some(cell));
+                push(grid, x + push_offset.x, y + push_offset.y, dir.rotate_left(), 1, Some(cell), false);
             }
         }
     });
@@ -282,8 +282,8 @@ fn do_physical_gens(grid: &mut Grid) {
         if cell.id == PHYSICAL_GENERATOR && cell.direction == dir && !cell.updated {
             cell.updated = true;
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                if can_generate(cell) && !push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy())).did_move() {
-                    push(grid, x, y, dir.flip(), 1, Some(cell.copy()));
+                if can_generate(cell) && !push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), false).did_move() {
+                    push(grid, x, y, dir.flip(), 1, Some(cell.copy()), false);
                 }
             }
         }
@@ -301,12 +301,12 @@ fn do_cross_gens(grid: &mut Grid) {
             cell.updated = true;
             if let Some(cell) = grid.get(x + cell_offset_1.x, y + cell_offset_1.y) {
                 if can_generate(cell) {
-                    push(grid, x + push_offset_1.x, y + push_offset_1.y, dir, 1, Some(cell.copy()));
+                    push(grid, x + push_offset_1.x, y + push_offset_1.y, dir, 1, Some(cell.copy()), false);
                 }
             }
             if let Some(cell) = grid.get(x + cell_offset_2.x, y + cell_offset_2.y) {
                 if can_generate(cell) {
-                    push(grid, x + push_offset_2.x, y + push_offset_2.y, dir.rotate_left(), 1, Some(cell.copy()));
+                    push(grid, x + push_offset_2.x, y + push_offset_2.y, dir.rotate_left(), 1, Some(cell.copy()), false);
                 }
             }
         }
@@ -321,7 +321,7 @@ fn do_replicators(grid: &mut Grid) {
             cell.updated = true;
             if let Some(cell) = grid.get(x + push_offset.x, y + push_offset.y) {
                 if can_generate(cell) {
-                    push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()));
+                    push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), false);
                 }
             }
         }
@@ -393,7 +393,7 @@ fn do_stones(grid: &mut Grid) {
     loop_each_dir!(for dir, x, y, cell in grid; {
         if cell.id == STONE && cell.direction == dir && !cell.updated {
             cell.updated = true;
-            if push(grid, x, y, dir.rotate_right(), 1, None).did_move_survive() {
+            if push(grid, x, y, dir.rotate_right(), 1, None, false).did_move_survive() {
                 // complex logic lol
 
                 let down = dir.rotate_right();
@@ -454,17 +454,17 @@ fn do_stones(grid: &mut Grid) {
 
                 if let Some(dir) = prefered_dir {
                     let off = dir.to_vector();
-                    if push(grid, x, y, dir, 1, None).did_move_survive() {
-                        push(grid, x + off.x, y + off.y, down, 1, None);
+                    if push(grid, x, y, dir, 1, None, false).did_move_survive() {
+                        push(grid, x + off.x, y + off.y, down, 1, None, false);
                     }
                 }
                 else if can_move_left && !can_move_right {
-                    if push(grid, x, y, dir.flip(), 1, None).did_move_survive() {
-                        push(grid, x, y, down, 1, None);
+                    if push(grid, x, y, dir.flip(), 1, None, false).did_move_survive() {
+                        push(grid, x, y, down, 1, None, false);
                     }
                 }
-                else if push(grid, x, y, dir, 1, None).did_move_survive() {
-                    push(grid, x, y, down, 1, None);
+                else if push(grid, x, y, dir, 1, None, false).did_move_survive() {
+                    push(grid, x, y, down, 1, None, false);
                 }
             }
         }
@@ -476,7 +476,7 @@ fn do_mailboxes(grid: &mut Grid) {
         if cell.id == MAILBOX && cell.direction == dir && !cell.updated {
             cell.updated = true;
             if let Some(contained) = cell.contained_cell {
-                if !push(grid, x, y, dir, 1, None).did_move() {
+                if !push(grid, x, y, dir, 1, None, false).did_move() {
                     grid.set(x, y, Cell::new(contained.0, dir + contained.1));
                 }
             }
@@ -490,7 +490,7 @@ fn do_pullshers(grid: &mut Grid) {
     }, x, y, cell in grid; {
         if cell.id == PULLSHER && cell.direction == dir && !cell.updated {
             cell.updated = true;
-            if push(grid, x, y, dir, 1, None).did_move() {
+            if push(grid, x, y, dir, 1, None, true).did_move() {
                 pull(grid, x - off.x, y - off.y, dir);
             }
         }
@@ -540,7 +540,7 @@ fn do_trashmovers(grid: &mut Grid) {
                 }
             }
             grid.delete(x + off.x, y + off.y);
-            push(grid, x, y, dir, 0, None);
+            push(grid, x, y, dir, 0, None, true);
         }
     });
 }
@@ -549,7 +549,7 @@ fn do_movers(grid: &mut Grid) {
     loop_each_dir!(for dir, x, y, cell in grid; {
         if cell.id == MOVER && cell.direction == dir && !cell.updated {
             cell.updated = true;
-            push(grid, x, y, dir, 0, None);
+            push(grid, x, y, dir, 0, None, true);
         }
     });
 }
@@ -561,7 +561,7 @@ fn do_speeds(grid: &mut Grid) {
         if cell.id == SPEED && cell.direction == dir && !cell.updated {
             cell.updated = true;
             if grid.get(x + off.x, y + off.y).is_none() {
-                push(grid, x, y, dir, 0, None);
+                push(grid, x, y, dir, 0, None, true);
             }
         }
     });
