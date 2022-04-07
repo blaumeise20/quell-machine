@@ -110,6 +110,13 @@ impl WindowHandler for WinHandler {
         }
     }
 
+    fn on_resize(&mut self, _: &mut WindowHelper<()>, size: Vector2<u32>) {
+        unsafe {
+            SCREEN_WIDTH = size.x as f32;
+            SCREEN_HEIGHT = size.y as f32;
+        }
+    }
+
 	fn on_draw(&mut self, helper: &mut WindowHelper, g: &mut Graphics2D) {
         // setup and helper stuff
         if self.assets.is_none() {

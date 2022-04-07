@@ -13,7 +13,6 @@ fn main() {
             // Some(WindowPosition::Center),
             None,
         )
-            .with_resizable(false)
     ).unwrap();
 
     let mut path = std::env::current_exe().unwrap();
