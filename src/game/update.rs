@@ -54,7 +54,7 @@ macro_rules! loop_each_dir {
 
 pub type UpdateState = Arc<Mutex<(/*running*/ bool, Grid, /*repeat count*/ u32)>>;
 
-pub fn run_update_loop(initial: Grid, grid: Grid) -> UpdateState {
+pub fn run_update_loop(_initial: Grid, grid: Grid) -> UpdateState {
     let state = Arc::new(Mutex::new((true, grid.clone(), 0)));
 
     let s = state.clone();
