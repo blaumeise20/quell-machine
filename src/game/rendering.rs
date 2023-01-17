@@ -745,7 +745,7 @@ impl WindowHandler for WinHandler {
     }
 }
 
-unsafe fn do_tick(is_initial: &mut bool) {
+unsafe fn do_tick(_is_initial: &mut bool) {
 
     update(&mut grid);
 }
