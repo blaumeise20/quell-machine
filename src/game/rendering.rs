@@ -63,6 +63,9 @@ pub struct WinHandler {
     place: bool,
     placement_tool: Tool,
 
+    check_loop: bool,
+    loop_length: u32,
+
     running: bool,
     running_state: Option<UpdateState>,
     show_help: bool,
@@ -92,6 +95,9 @@ impl WinHandler {
             direction: Direction::Right,
             place: true,
             placement_tool: Tool::Place,
+
+            check_loop: false,
+            loop_length: 0,
 
             running: false,
             running_state: None,
@@ -215,14 +221,22 @@ impl WindowHandler for WinHandler {
 
         if self.running && self.running_state.is_none() {
             let start_time = Instant::now();
-            unsafe { do_tick(&mut self.is_initial); }
+            unsafe { do_tick(); }
             self.tick_times.rotate_left(1);
             self.tick_times[9] = start_time.elapsed().as_secs_f32() * 1000.0;
+
+            unsafe {
+                if self.check_loop && grid.has_same_cells(&initial) && self.loop_length == 0 {
+                    self.loop_length = grid.tick_count;
+                }
+            }
         }
         if let Some(state) = &self.running_state {
             unsafe {
                 let state = state.lock().unwrap();
                 grid = state.1.clone();
+                self.tick_times.rotate_left(1);
+                self.tick_times[9] = state.2;
             }
         }
 
@@ -486,18 +500,35 @@ impl WindowHandler for WinHandler {
         );
 
         // tick time
+        let tick_time = self.tick_times.iter().sum::<f32>() / 10.0;
         g.draw_text(
             Vector2::new(10.0, 30.0),
             Color::WHITE,
-            &assets.font.layout_text(&format!("Tick time: {}", self.tick_times.iter().sum::<f32>() / 10.0), 17.0, TextOptions::new()),
+            &assets.font.layout_text(&format!("Tick time: {tick_time}"), 17.0, TextOptions::new()),
+        );
+
+        // tps
+        g.draw_text(
+            Vector2::new(10.0, 50.0),
+            Color::WHITE,
+            &assets.font.layout_text(&format!("TPS: {}", 1000.0 / tick_time), 17.0, TextOptions::new()),
         );
 
         // separate thread updating
         if self.threaded {
             g.draw_text(
-                Vector2::new(10.0, 50.0),
+                Vector2::new(10.0, 70.0),
                 Color::WHITE,
                 &assets.font.layout_text("Separate thread updating enabled", 17.0, TextOptions::new()),
+            );
+        }
+
+        // looping length
+        if self.loop_length > 0 {
+            g.draw_text(
+                Vector2::new(10.0, 90.0),
+                Color::WHITE,
+                &assets.font.layout_text(&format!("Loop length: {}", self.loop_length), 17.0, TextOptions::new()),
             );
         }
 
@@ -520,7 +551,7 @@ impl WindowHandler for WinHandler {
                 }
                 this.running = running;
                 if this.running && this.running_state.is_none() {
-                    this.running_state = Some(run_update_loop(unsafe { initial.clone() }, unsafe { grid.clone() }));
+                    this.running_state = Some(run_update_loop(unsafe { grid.clone() }));
                 }
             }
             else {
@@ -529,7 +560,6 @@ impl WindowHandler for WinHandler {
         }
 
         if let Some(key) = virtual_key_code {
-            println!("{:?}", key);
             self.keys.insert(key);
             match key {
                 VirtualKeyCode::Q if self.keys.contains(&COMMAND_KEY) => {
@@ -545,12 +575,13 @@ impl WindowHandler for WinHandler {
                 VirtualKeyCode::Escape => self.show_help = !self.show_help,
 
                 VirtualKeyCode::Space => { set_running(self, !self.running) },
-                VirtualKeyCode::G => { if !self.running { unsafe { do_tick(&mut self.is_initial); } } },
+                VirtualKeyCode::G => { if !self.running { unsafe { do_tick(); } } },
                 VirtualKeyCode::T => {
                     if !self.is_initial {
                         set_running(self, false);
                         unsafe { grid = initial.clone(); }
                         self.is_initial = true;
+                        self.loop_length = 0;
                     }
                 },
 
@@ -586,6 +617,13 @@ impl WindowHandler for WinHandler {
                         self.threaded = !self.threaded;
                     }
                 },
+
+                VirtualKeyCode::N => {
+                    if self.is_initial {
+                        self.check_loop = !self.check_loop;
+                        self.loop_length = 0;
+                    }
+                }
 
                 _ => {},
             }
@@ -745,8 +783,7 @@ impl WindowHandler for WinHandler {
     }
 }
 
-unsafe fn do_tick(is_initial: &mut bool) {
-
+unsafe fn do_tick() {
     update(&mut grid);
 }
 

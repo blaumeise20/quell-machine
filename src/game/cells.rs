@@ -1,6 +1,6 @@
 use std::mem;
 
-use super::direction::Direction;
+use super::{direction::Direction, cell_data::CELL_DATA};
 
 pub const DEFAULT_GRID_WIDTH: usize = 100;
 pub const DEFAULT_GRID_HEIGHT: usize = 100;
@@ -10,7 +10,7 @@ pub type CellType = u16;
 static mut DUMMY_CELL: Option<Cell> = None;
 
 /// Represents a cell on a grid.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Cell {
     pub id: CellType,
     pub direction: Direction,
@@ -39,6 +39,14 @@ impl Cell {
             contained_cell: self.contained_cell,
         }
     }
+
+    pub fn looks_like(&self, other: &Cell) -> bool {
+        if self.id != other.id {
+            return false;
+        }
+        let max_rot = CELL_DATA.iter().find(|cd| cd.id == self.id).unwrap().sides as u8;
+        self.direction.shrink(max_rot) == other.direction.shrink(max_rot)
+    }
 }
 
 impl Clone for Cell {
@@ -46,6 +54,13 @@ impl Clone for Cell {
         self.copy()
     }
 }
+
+impl PartialEq for Cell {
+    fn eq(&self, other: &Cell) -> bool {
+        self.id == other.id && self.direction == other.direction && self.contained_cell == other.contained_cell
+    }
+}
+impl Eq for Cell {}
 
 /// A whole grid of cells.
 #[derive(Debug, Clone)]
@@ -190,4 +205,28 @@ impl Grid {
             }
         }
     }
+
+    pub fn has_same_cells(&self, other: &Grid) -> bool {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let cell = self.get(x as isize, y as isize);
+                let other_cell = other.get(x as isize, y as isize);
+                match (cell, other_cell) {
+                    (Some(c), Some(oc)) => {
+                        if !c.looks_like(oc) { return false; }
+                    },
+                    (None, None) => {},
+                    _ => return false,
+                }
+            }
+        }
+        true
+    }
 }
+
+impl PartialEq for Grid {
+    fn eq(&self, other: &Grid) -> bool {
+        self.width == other.width && self.height == other.height && self.cells == other.cells
+    }
+}
+impl Eq for Grid {}

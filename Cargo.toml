@@ -10,3 +10,11 @@ clipboard = "0.5"
 image = "0.23"
 libdeflater = "0.7"
 base64 = "0.13"
+
+[profile.release]
+opt-level = 3
+debug = false
+strip = "symbols"
+lto = "fat"
+panic = "abort"
+codegen-units = 1
