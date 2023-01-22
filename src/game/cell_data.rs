@@ -232,6 +232,7 @@ celld! {
         sides 4,
         texture "fixed_pullsher"
     }
+    // IMPORTANT: there may never be more than 63 cells
 }
 
 hotbar![

@@ -1,26 +1,22 @@
-use std::{ops::{Add, Sub, Rem, AddAssign, SubAssign}, fmt::Display};
+use std::{ops::{Add, Sub, Rem, AddAssign, SubAssign}, fmt::Display, hint::unreachable_unchecked};
 
 use speedy2d::dimen::Vector2;
 
 /// A direction of a cell.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Direction {
-	Right,
-	Down,
-	Left,
-	Up,
+	Right = 0,
+	Down = 1,
+	Left = 2,
+	Up = 3,
 }
 
 impl Direction {
     /// Turns the direction into degrees.
-    #[inline]
+    #[inline(always)]
 	pub fn to_degrees(self) -> f32 {
-		match self {
-			Direction::Right => 0.0,
-			Direction::Down => 90.0,
-			Direction::Left => 180.0,
-			Direction::Up => 270.0,
-		}
+        self as u8 as f32 * 90.0
 	}
 
     /// Turns the direction into radians.
@@ -41,36 +37,21 @@ impl Direction {
 	}
 
     /// Rotates the direction 180 degrees.
-    #[inline]
+    #[inline(always)]
 	pub fn flip(self) -> Direction {
-		match self {
-			Direction::Right => Direction::Left,
-			Direction::Down => Direction::Up,
-			Direction::Left => Direction::Right,
-			Direction::Up => Direction::Down,
-		}
+        ((self as u8 + 2) & 3).into()
 	}
 
     /// Rotates the direction clockwise.
-    #[inline]
+    #[inline(always)]
     pub fn rotate_left(self) -> Direction {
-        match self {
-            Direction::Right => Direction::Up,
-            Direction::Down => Direction::Right,
-            Direction::Left => Direction::Down,
-            Direction::Up => Direction::Left,
-        }
+        ((self as u8 + 3) & 3).into()
     }
 
     /// Rotates the direction counter-clockwise.
-    #[inline]
+    #[inline(always)]
     pub fn rotate_right(self) -> Direction {
-        match self {
-            Direction::Right => Direction::Down,
-            Direction::Down => Direction::Left,
-            Direction::Left => Direction::Up,
-            Direction::Up => Direction::Right,
-        }
+        ((self as u8 + 1) & 3).into()
     }
 
     /// Reduces the direction to a radius/range.
@@ -81,6 +62,7 @@ impl Direction {
 }
 
 impl Display for Direction {
+    #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Direction::Right => write!(f, "Right"),
@@ -92,71 +74,62 @@ impl Display for Direction {
 }
 
 impl From<i32> for Direction {
+    #[inline]
 	fn from(i: i32) -> Direction {
 		match i & 3 {
 			0 => Direction::Right,
 			1 => Direction::Down,
 			2 => Direction::Left,
 			3 => Direction::Up,
-			_ => panic!("Invalid direction: {}", i),
+			_ => unsafe { unreachable_unchecked() },
 		}
 	}
 }
 
 impl From<u8> for Direction {
+    #[inline]
 	fn from(i: u8) -> Direction {
 		match i & 3 {
 			0 => Direction::Right,
 			1 => Direction::Down,
 			2 => Direction::Left,
 			3 => Direction::Up,
-			_ => panic!("Invalid direction: {}", i),
+			_ => unsafe { unreachable_unchecked() },
 		}
 	}
 }
 
 impl From<usize> for Direction {
+    #[inline]
     fn from(i: usize) -> Direction {
         match i & 3 {
             0 => Direction::Right,
             1 => Direction::Down,
             2 => Direction::Left,
             3 => Direction::Up,
-            _ => panic!("Invalid direction: {}", i),
+            _ => unsafe { unreachable_unchecked() },
         }
     }
 }
 
 impl From<Direction> for i32 {
+    #[inline(always)]
 	fn from(d: Direction) -> Self {
-		match d {
-			Direction::Right => 0,
-			Direction::Down => 1,
-			Direction::Left => 2,
-			Direction::Up => 3,
-		}
+		d as u8 as i32
 	}
 }
 
 impl From<Direction> for u8 {
+    #[inline(always)]
 	fn from(d: Direction) -> Self {
-		match d {
-			Direction::Right => 0,
-			Direction::Down => 1,
-			Direction::Left => 2,
-			Direction::Up => 3,
-		}
+		d as u8
 	}
 }
 
 impl From<Direction> for usize {
+    #[inline(always)]
 	fn from(d: Direction) -> Self {
-		match d {
-			Direction::Right => 0,
-			Direction::Down => 1,
-			Direction::Left => 2,
-			Direction::Up => 3,
-		}
+		d as u8 as usize
 	}
 }
 
@@ -165,7 +138,7 @@ impl Add for Direction {
 
     #[inline(always)]
 	fn add(self, rhs: Self) -> Self::Output {
-		((u8::from(self) + u8::from(rhs)) & 3).into()
+		((self as u8 + rhs as u8) & 3).into()
 	}
 }
 
@@ -174,7 +147,7 @@ impl Add<u8> for Direction {
 
     #[inline(always)]
 	fn add(self, rhs: u8) -> Self::Output {
-		((u8::from(self) + rhs) & 3).into()
+		((self as u8 + rhs) & 3).into()
 	}
 }
 
@@ -190,7 +163,7 @@ impl Sub for Direction {
 
     #[inline(always)]
 	fn sub(self, rhs: Self) -> Self::Output {
-		(((u8::from(self) as i8 - u8::from(rhs) as i8) & 3) as u8).into()
+		(((self as i8 - rhs as i8) & 3) as u8).into()
 	}
 }
 
@@ -199,7 +172,7 @@ impl Sub<u8> for Direction {
 
     #[inline(always)]
 	fn sub(self, rhs: u8) -> Self::Output {
-		(((u8::from(self) as i8 - rhs as i8) & 3) as u8).into()
+		(((self as i8 - rhs as i8) & 3) as u8).into()
 	}
 }
 
@@ -215,6 +188,6 @@ impl Rem<u8> for Direction {
 
     #[inline(always)]
     fn rem(self, rhs: u8) -> Self::Output {
-        ((u8::from(self) % rhs) & 3).into()
+        ((self as u8 % rhs) & 3).into()
     }
 }

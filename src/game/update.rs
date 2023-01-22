@@ -1,14 +1,6 @@
-use std::{collections::HashSet, sync::{Arc, Mutex}, thread, time::Instant};
+use std::{sync::{Arc, Mutex}, thread, time::Instant};
 
 use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180, TUNNEL, FIXED_PULLSHER}};
-
-/// Order in which cell directions are updated.
-static UPDATE_DIRECTIONS: [Direction; 4] = [
-    Direction::Right,
-    Direction::Left,
-    Direction::Up,
-    Direction::Down,
-];
 
 macro_rules! loop_each {
     (for $x:ident, $y:ident, $name:ident in $grid:expr; $code:block) => {
@@ -24,7 +16,12 @@ macro_rules! loop_each {
 
 macro_rules! loop_each_dir {
     (for $dir:ident $({ $($s:stmt;)* })?, $x:ident, $y:ident, $name:ident in $grid:expr; $code:block) => {
-        for $dir in UPDATE_DIRECTIONS {
+        for $dir in [
+            Direction::Right,
+            Direction::Left,
+            Direction::Up,
+            Direction::Down,
+        ] {
             $($( $s )*)?
             if $dir == Direction::Right || $dir == Direction::Up {
                 let mut $y = $grid.height as isize - 1;
@@ -84,20 +81,20 @@ pub fn run_update_loop(grid: Grid) -> UpdateState {
 
 /// Performs a single update step.
 pub fn update(grid: &mut Grid) {
-    let mut cells = HashSet::new();
+    let mut cell_flags = 0u64;
 
     for y in 0..grid.height as isize {
         for x in 0..grid.width as isize {
             if let Some(cell) = grid.get_mut(x, y) {
                 cell.updated = false;
-                cells.insert(cell.id);
+                cell_flags |= 1 << cell.id;
             }
         }
     }
 
     macro_rules! subticks {
         ($( $($cell:ident),*: $fn_name:ident)* ) => {
-            $( if $(cells.contains(&$cell))||* { $fn_name(grid); } )*
+            $( if cell_flags & ($(1 << $cell)|*) != 0 { $fn_name(grid); } )*
         }
     }
 

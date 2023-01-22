@@ -20,6 +20,7 @@ pub struct Cell {
 
 impl Cell {
     /// Creates a new cell.
+    #[inline(always)]
     pub fn new(id: CellType, direction: Direction) -> Self {
         Cell {
             id,
@@ -31,6 +32,7 @@ impl Cell {
 
     /// Creates a copy of the cell,
     /// without copying the updated state.
+    #[inline(always)]
     pub fn copy(&self) -> Self {
         Cell {
             id: self.id,
@@ -119,10 +121,11 @@ impl Grid {
 
     /// Gets a immutable reference to the cell at the coordinate.
     /// Returns `None` if the coordinate is outside the grid bounds.
-    #[inline]
+    #[inline(always)]
     pub fn get<'a, 'b: 'a>(&'a self, x: isize, y: isize) -> &'b Option<Cell> {
         if self.is_in_bounds(x, y) {
-            unsafe { mem::transmute(&self.cells[y as usize * self.width + x as usize]) }
+            // SAFETY: We checked the bounds above.
+            unsafe { mem::transmute(self.cells.get_unchecked(y as usize * self.width + x as usize)) }
         }
         else {
             &None
@@ -139,10 +142,10 @@ impl Grid {
 
     /// Gets a mutable reference to the cell at the coordinate.
     /// Returns `None` if the coordinate is outside the grid bounds.
-    #[inline]
+    #[inline(always)]
     pub fn get_mut<'a, 'b: 'a>(&'a mut self, x: isize, y: isize) -> &'b mut Option<Cell> {
         if self.is_in_bounds(x, y) {
-            unsafe { mem::transmute(&mut self.cells[y as usize * self.width + x as usize]) }
+            unsafe { mem::transmute(self.cells.get_unchecked_mut(y as usize * self.width + x as usize)) }
         }
         else {
             unsafe { &mut DUMMY_CELL }
@@ -153,7 +156,7 @@ impl Grid {
     #[inline(always)]
     pub fn set(&mut self, x: isize, y: isize, cell: Cell) {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize * self.width + x as usize] = Some(cell);
+            unsafe { *self.cells.get_unchecked_mut(y as usize * self.width + x as usize) = Some(cell); }
         }
     }
 
@@ -162,7 +165,7 @@ impl Grid {
     #[inline(always)]
     pub fn set_cell(&mut self, x: isize, y: isize, cell: Option<Cell>) {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize * self.width + x as usize] = cell;
+            unsafe { *self.cells.get_unchecked_mut(y as usize * self.width + x as usize) = cell; }
         }
     }
 
@@ -170,7 +173,7 @@ impl Grid {
     #[inline(always)]
     pub fn try_set(&mut self, ix: usize, cell: Option<Cell>) -> bool {
         if ix < self.width * self.height {
-            self.cells[ix] = cell;
+            unsafe { *self.cells.get_unchecked_mut(ix) = cell; }
             true
         }
         else {
@@ -182,15 +185,15 @@ impl Grid {
     #[inline(always)]
     pub fn delete(&mut self, x: isize, y: isize) {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize * self.width + x as usize] = None;
+            unsafe { *self.cells.get_unchecked_mut(y as usize * self.width + x as usize) = None; }
         }
     }
 
     /// Takes out the cell at the coordinate, leaving air.
-    #[inline]
+    #[inline(always)]
     pub fn take(&mut self, x: isize, y: isize) -> Option<Cell> {
         if self.is_in_bounds(x, y) {
-            self.cells[y as usize * self.width + x as usize].take()
+            unsafe { self.cells.get_unchecked_mut(y as usize * self.width + x as usize).take() }
         }
         else {
             None
@@ -199,9 +202,11 @@ impl Grid {
 
     /// Iterates over every cell in the grid.
     pub fn for_each(&self, mut f: impl FnMut(isize, isize, Option<&Cell>)) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                f(x as isize, y as isize, self.cells[y * self.width + x].as_ref());
+        unsafe {
+            for y in 0..self.height {
+                for x in 0..self.width {
+                    f(x as isize, y as isize, self.cells.get_unchecked(y * self.width + x).as_ref());
+                }
             }
         }
     }
