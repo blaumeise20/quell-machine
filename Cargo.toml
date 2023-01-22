@@ -7,9 +7,9 @@ description = "Another Cell Machine remake but focused on speed"
 [dependencies]
 speedy2d = "1.4"
 clipboard = "0.5"
-image = "0.23"
-libdeflater = "0.7"
-base64 = "0.13"
+image = "0.24"
+libdeflater = "0.11"
+base64 = "0.20"
 
 [profile.release]
 opt-level = 3
