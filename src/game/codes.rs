@@ -136,7 +136,7 @@ fn decode_q1<'a>(width: usize, height: usize, input: impl Iterator<Item = &'a st
         if !cell_str.is_empty() {
             let mut chars = cell_str.chars().collect::<Vec<_>>();
             let direction = chars.pop().unwrap().to_digit(10).unwrap() as u8;
-            let id = decode_num_62(chars.into_iter()) as u16;
+            let id = decode_num_62(chars.into_iter()) as u8;
             grid.set(x, y, Cell::new(id, direction.into()));
         }
         x += 1;
@@ -183,7 +183,7 @@ fn decode_q2(width: usize, height: usize, input: &str) -> Result<Grid, &'static 
     for cell in cell_arr {
         if cell != 0 {
             let cell = cell - 1;
-            grid.set(x, y, Cell::new((cell / 4) as u16, (cell % 4).into()));
+            grid.set(x, y, Cell::new((cell / 4) as u8, (cell % 4).into()));
         }
         x += 1;
         if x >= grid.width as isize {

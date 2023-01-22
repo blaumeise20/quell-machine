@@ -5,7 +5,7 @@ use super::{direction::Direction, cell_data::CELL_DATA};
 pub const DEFAULT_GRID_WIDTH: usize = 100;
 pub const DEFAULT_GRID_HEIGHT: usize = 100;
 
-pub type CellType = u16;
+pub type CellType = u8;
 
 static mut DUMMY_CELL: Option<Cell> = None;
 
@@ -15,7 +15,6 @@ pub struct Cell {
     pub id: CellType,
     pub direction: Direction,
     pub updated: bool,
-    pub contained_cell: Option<(CellType, Direction)>,
 }
 
 impl Cell {
@@ -26,7 +25,6 @@ impl Cell {
             id,
             direction,
             updated: false,
-            contained_cell: None,
         }
     }
 
@@ -38,7 +36,6 @@ impl Cell {
             id: self.id,
             direction: self.direction,
             updated: false,
-            contained_cell: self.contained_cell,
         }
     }
 
@@ -59,7 +56,7 @@ impl Clone for Cell {
 
 impl PartialEq for Cell {
     fn eq(&self, other: &Cell) -> bool {
-        self.id == other.id && self.direction == other.direction && self.contained_cell == other.contained_cell
+        self.id == other.id && self.direction == other.direction
     }
 }
 impl Eq for Cell {}
