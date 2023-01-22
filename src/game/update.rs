@@ -1,6 +1,6 @@
 use std::{sync::{Arc, Mutex}, thread, time::Instant};
 
-use super::{cells::{Grid, Cell}, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, MAILBOX, POSTOFFICE, PHYSICAL_GENERATOR, ROTATOR_180, TUNNEL, FIXED_PULLSHER}};
+use super::{cells::Grid, manipulation::{push, rotate_by, rotate_to, pull, MoveForce, can_move, is_trash, can_generate}, direction::Direction, cell_data::{MOVER, GENERATOR, ROTATOR_CCW, ROTATOR_CW, ORIENTATOR, PULLER, PULLSHER, MIRROR, CROSSMIRROR, TRASHMOVER, SPEED, GENERATOR_CW, GENERATOR_CCW, TRASHPULLER, STONE, REPLICATOR, SUCKER, GENERATOR_CROSS, PHYSICAL_GENERATOR, ROTATOR_180, TUNNEL, FIXED_PULLSHER}};
 
 macro_rules! loop_each {
     (for $x:ident, $y:ident, $name:ident in $grid:expr; $code:block) => {
@@ -109,11 +109,11 @@ pub fn update(grid: &mut Grid) {
         PHYSICAL_GENERATOR: do_physical_gens
         GENERATOR_CROSS : do_cross_gens
         REPLICATOR      : do_replicators
-        POSTOFFICE      : do_postoffices
+        // POSTOFFICE      : do_postoffices
         ROTATOR_CW, ROTATOR_CCW, ROTATOR_180: do_rotators
         ORIENTATOR      : do_orientators
         STONE           : do_stones
-        MAILBOX         : do_mailboxes
+        // MAILBOX         : do_mailboxes
         PULLSHER        : do_pullshers
         TRASHPULLER     : do_trashpullers
         PULLER          : do_pullers
@@ -328,26 +328,26 @@ fn do_replicators(grid: &mut Grid) {
     });
 }
 
-fn do_postoffices(grid: &mut Grid) {
-    loop_each_dir!(for dir {
-        let mail_offset = dir.flip().to_vector();
-        let mailbox_offset = dir.to_vector();
-    }, x, y, cell in grid; {
-        if cell.id == POSTOFFICE && cell.direction == dir && !cell.updated {
-            cell.updated = true;
-            if let Some(mailbox) = grid.get_mut(x + mailbox_offset.x, y + mailbox_offset.y) {
-                if mailbox.id == MAILBOX {
-                    if let Some(mail) = grid.get_mut(x + mail_offset.x, y + mail_offset.y) {
-                        if can_move(mail, dir, MoveForce::Pull) {
-                            mailbox.contained_cell = Some((mail.id, mail.direction - dir));
-                            grid.delete(x + mail_offset.x, y + mail_offset.y);
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
+// fn do_postoffices(grid: &mut Grid) {
+//     loop_each_dir!(for dir {
+//         let mail_offset = dir.flip().to_vector();
+//         let mailbox_offset = dir.to_vector();
+//     }, x, y, cell in grid; {
+//         if cell.id == POSTOFFICE && cell.direction == dir && !cell.updated {
+//             cell.updated = true;
+//             if let Some(mailbox) = grid.get_mut(x + mailbox_offset.x, y + mailbox_offset.y) {
+//                 if mailbox.id == MAILBOX {
+//                     if let Some(mail) = grid.get_mut(x + mail_offset.x, y + mail_offset.y) {
+//                         if can_move(mail, dir, MoveForce::Pull) {
+//                             mailbox.contained_cell = Some((mail.id, mail.direction - dir));
+//                             grid.delete(x + mail_offset.x, y + mail_offset.y);
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     });
+// }
 
 fn do_rotators(grid: &mut Grid) {
     loop_each!(for x, y, cell in grid; {
@@ -471,18 +471,18 @@ fn do_stones(grid: &mut Grid) {
     });
 }
 
-fn do_mailboxes(grid: &mut Grid) {
-    loop_each_dir!(for dir, x, y, cell in grid; {
-        if cell.id == MAILBOX && cell.direction == dir && !cell.updated {
-            cell.updated = true;
-            if let Some(contained) = cell.contained_cell {
-                if !push(grid, x, y, dir, 1, None, false).did_move() {
-                    grid.set(x, y, Cell::new(contained.0, dir + contained.1));
-                }
-            }
-        }
-    });
-}
+// fn do_mailboxes(grid: &mut Grid) {
+//     loop_each_dir!(for dir, x, y, cell in grid; {
+//         if cell.id == MAILBOX && cell.direction == dir && !cell.updated {
+//             cell.updated = true;
+//             if let Some(contained) = cell.contained_cell {
+//                 if !push(grid, x, y, dir, 1, None, false).did_move() {
+//                     grid.set(x, y, Cell::new(contained.0, dir + contained.1));
+//                 }
+//             }
+//         }
+//     });
+// }
 
 fn do_pullshers(grid: &mut Grid) {
     loop_each_dir!(for dir {

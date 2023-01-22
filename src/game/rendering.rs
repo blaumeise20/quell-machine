@@ -5,7 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use image::{imageops::{rotate90, rotate180, rotate270}, ImageBuffer, Rgba};
 use speedy2d::{window::{WindowHandler, WindowHelper, VirtualKeyCode, KeyScancode, MouseButton, MouseScrollDistance}, Graphics2D, color::Color, image::{ImageDataType, ImageFileFormat, ImageSmoothingMode, ImageHandle}, dimen::Vector2, shape::Rectangle, font::{Font, TextLayout, TextOptions, FormattedTextBlock, TextAlignment}};
 
-use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, CellType, Cell, Grid}, direction::Direction, update::{update, run_update_loop}, codes::{import, export_q1, export_q2}, cell_data::{CELL_DATA, HOTBAR_ITEMS, MAILBOX}};
+use crate::game::{cells::{DEFAULT_GRID_HEIGHT, DEFAULT_GRID_WIDTH, CellType, Cell, Grid}, direction::Direction, update::{update, run_update_loop}, codes::{import, export_q1, export_q2}, cell_data::{CELL_DATA, HOTBAR_ITEMS}};
 
 use super::update::UpdateState;
 
@@ -300,19 +300,19 @@ impl WindowHandler for WinHandler {
                                 let y = y + oy;
                                 draw_ghost_cell(assets, g, x, y, &cell);
                                 if do_place {
-                                    let mut place_cell = place_cell.clone();
+                                    let place_cell = place_cell.clone();
                                     let cell = grid.get_mut(x, y);
-                                    if let Some(cell) = cell {
-                                        if cell.id == MAILBOX {
-                                            if let Some(ref mut place_cell) = place_cell {
-                                                if place_cell.id != MAILBOX {
-                                                    let contained = (place_cell.id, place_cell.direction - cell.direction);
-                                                    *place_cell = cell.copy();
-                                                    place_cell.contained_cell = Some(contained);
-                                                }
-                                            }
-                                        }
-                                    }
+                                    // if let Some(cell) = cell {
+                                    //     if cell.id == MAILBOX {
+                                    //         if let Some(ref mut place_cell) = place_cell {
+                                    //             if place_cell.id != MAILBOX {
+                                    //                 let contained = (place_cell.id, place_cell.direction - cell.direction);
+                                    //                 *place_cell = cell.copy();
+                                    //                 place_cell.contained_cell = Some(contained);
+                                    //             }
+                                    //         }
+                                    //     }
+                                    // }
                                     if place_cell != *cell {
                                         self.undo_stack.insert(x, y, cell.clone());
                                         *cell = place_cell;
@@ -329,19 +329,19 @@ impl WindowHandler for WinHandler {
                             let y = y + oy;
                             draw_ghost_cell(assets, g, x, y, &cell);
                             if do_place {
-                                let mut place_cell = place_cell.clone();
+                                let place_cell = place_cell.clone();
                                 let cell = grid.get_mut(x, y);
-                                if let Some(cell) = cell {
-                                    if cell.id == MAILBOX {
-                                        if let Some(ref mut place_cell) = place_cell {
-                                            if place_cell.id != MAILBOX {
-                                                let contained = (place_cell.id, place_cell.direction - cell.direction);
-                                                *place_cell = cell.copy();
-                                                place_cell.contained_cell = Some(contained);
-                                            }
-                                        }
-                                    }
-                                }
+                                // if let Some(cell) = cell {
+                                //     if cell.id == MAILBOX {
+                                //         if let Some(ref mut place_cell) = place_cell {
+                                //             if place_cell.id != MAILBOX {
+                                //                 let contained = (place_cell.id, place_cell.direction - cell.direction);
+                                //                 *place_cell = cell.copy();
+                                //                 place_cell.contained_cell = Some(contained);
+                                //             }
+                                //         }
+                                //     }
+                                // }
                                 if place_cell != *cell {
                                     self.undo_stack.insert(x, y, cell.clone());
                                     *cell = place_cell;
@@ -844,21 +844,21 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
             if let Some(cell) = grid.get_unchecked(x as isize, y as isize) {
                 // draw cell
                 g.draw_rectangle_image(cell_rect, &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]);
-                if cell.id == MAILBOX {
-                    if let Some((id, dir)) = cell.contained_cell {
-                        let cell_rect = Rectangle::new(
-                            Vector2::new(
-                                ((x as f32 - screen_x) * CELL_SIZE + CELL_SIZE / 4.0) * screen_zoom + screen_w_half,
-                                ((screen_y - y as f32 - 1.0) * CELL_SIZE + CELL_SIZE / 4.0) * screen_zoom + screen_h_half,
-                            ),
-                            Vector2::new(
-                                ((x as f32 - screen_x + 1.0) * CELL_SIZE - CELL_SIZE / 4.0) * screen_zoom + screen_w_half,
-                                ((screen_y - y as f32) * CELL_SIZE - CELL_SIZE / 4.0) * screen_zoom + screen_h_half,
-                            )
-                        );
-                        g.draw_rectangle_image(cell_rect, &assets.cells.get(&id).unwrap()[usize::from(cell.direction + dir)]);
-                    }
-                }
+                // if cell.id == MAILBOX {
+                //     if let Some((id, dir)) = cell.contained_cell {
+                //         let cell_rect = Rectangle::new(
+                //             Vector2::new(
+                //                 ((x as f32 - screen_x) * CELL_SIZE + CELL_SIZE / 4.0) * screen_zoom + screen_w_half,
+                //                 ((screen_y - y as f32 - 1.0) * CELL_SIZE + CELL_SIZE / 4.0) * screen_zoom + screen_h_half,
+                //             ),
+                //             Vector2::new(
+                //                 ((x as f32 - screen_x + 1.0) * CELL_SIZE - CELL_SIZE / 4.0) * screen_zoom + screen_w_half,
+                //                 ((screen_y - y as f32) * CELL_SIZE - CELL_SIZE / 4.0) * screen_zoom + screen_h_half,
+                //             )
+                //         );
+                //         g.draw_rectangle_image(cell_rect, &assets.cells.get(&id).unwrap()[usize::from(cell.direction + dir)]);
+                //     }
+                // }
             }
             else {
                 // draw background

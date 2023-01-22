@@ -196,43 +196,43 @@ celld! {
         sides 4,
         texture "generator_cross"
     }
-    MAILBOX 28 {
-        "Mailbox",
-        "Can be filled with a cell and then moves with it. If it hits a wall it deletes itself and pops out the stored cell.",
-        sides 4,
-        texture "mailbox"
-    }
-    POSTOFFICE 29 {
-        "Post Office",
-        "Used to fill a mailbox. If there is a mailbox in front of it and a movable cell behind it, the \"mail\" will be deleted and put into the mailbox.",
-        sides 4,
-        texture "postoffice"
-    }
-    PHYSICAL_GENERATOR 30 {
+    // MAILBOX 28 {
+    //     "Mailbox",
+    //     "Can be filled with a cell and then moves with it. If it hits a wall it deletes itself and pops out the stored cell.",
+    //     sides 4,
+    //     texture "mailbox"
+    // }
+    // POSTOFFICE 29 {
+    //     "Post Office",
+    //     "Used to fill a mailbox. If there is a mailbox in front of it and a movable cell behind it, the \"mail\" will be deleted and put into the mailbox.",
+    //     sides 4,
+    //     texture "postoffice"
+    // }
+    PHYSICAL_GENERATOR 28 {
         "Physical Generator",
         "Generates the cell in front of it. If it hits a wall it pushes itself back.",
         sides 4,
         texture "physical_generator"
     }
-    ROTATOR_180 31 {
+    ROTATOR_180 29 {
         "Rotator 180",
         "Rotates all touching cells 180 degrees.",
         sides 1,
         texture "rotator_180"
     }
-    TUNNEL 32 {
+    TUNNEL 30 {
         "Tunnel",
         "Tries to push the cell behind to it's front.",
         sides 4,
         texture "tunnel"
     }
-    FIXED_PULLSHER 33 {
+    FIXED_PULLSHER 31 {
         "Fixed Pullsher",
         "Like tunnel, but pulls from behind.",
         sides 4,
         texture "fixed_pullsher"
     }
-    // IMPORTANT: there may never be more than 63 cells
+    // IMPORTANT: DO NOT ADD MORE CELLS HERE
 }
 
 hotbar![
@@ -242,7 +242,7 @@ hotbar![
     [ROTATOR_CW, ROTATOR_CCW, ROTATOR_180, ORIENTATOR],
     [PUSH, SLIDE, ONE_DIR, SLIDE_WALL],
     [TRASH, ENEMY, SUCKER],
-    [MAILBOX, POSTOFFICE],
+    // [MAILBOX, POSTOFFICE],
     [MIRROR, CROSSMIRROR, TUNNEL, FIXED_PULLSHER],
 ];
 
