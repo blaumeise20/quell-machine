@@ -242,8 +242,8 @@ impl WindowHandler for WinHandler {
 
         unsafe {
             let hotbar_rect = Rectangle::new(
-                Vector2::new(0.0, SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT),
-                Vector2::new(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32),
+                Vector2::new(0.0, SCREEN_HEIGHT - HOTBAR_HEIGHT),
+                Vector2::new(SCREEN_WIDTH, SCREEN_HEIGHT),
             );
             if self.keys.contains(&VirtualKeyCode::W) { screen_y += delta_secs * CELL_SPEED / screen_zoom; }
             if self.keys.contains(&VirtualKeyCode::S) { screen_y -= delta_secs * CELL_SPEED / screen_zoom; }
@@ -368,11 +368,11 @@ impl WindowHandler for WinHandler {
                 let rect = Rectangle::new(
                     Vector2::new(
                         i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING,
-                        SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT + HOTBAR_CELL_SPACING,
+                        SCREEN_HEIGHT - HOTBAR_HEIGHT + HOTBAR_CELL_SPACING,
                     ),
                     Vector2::new(
                         i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING,
-                        SCREEN_HEIGHT as f32 - HOTBAR_CELL_SPACING,
+                        SCREEN_HEIGHT - HOTBAR_CELL_SPACING,
                     ),
                 );
                 g.draw_rectangle_image_tinted(
@@ -390,12 +390,12 @@ impl WindowHandler for WinHandler {
             };
             let tool_rect = Rectangle::new(
                 Vector2::new(
-                    SCREEN_WIDTH as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
-                    SCREEN_HEIGHT as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
+                    SCREEN_WIDTH - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
+                    SCREEN_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
                 ),
                 Vector2::new(
-                    SCREEN_WIDTH as f32 - HOTBAR_CELL_SPACING,
-                    SCREEN_HEIGHT as f32 - HOTBAR_CELL_SPACING,
+                    SCREEN_WIDTH - HOTBAR_CELL_SPACING,
+                    SCREEN_HEIGHT - HOTBAR_CELL_SPACING,
                 ),
             );
             g.draw_rectangle_image(
@@ -405,8 +405,8 @@ impl WindowHandler for WinHandler {
 
             // top border
             g.draw_line(
-                Vector2::new(0.0, SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT),
-                Vector2::new(SCREEN_WIDTH, SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT),
+                Vector2::new(0.0, SCREEN_HEIGHT - HOTBAR_HEIGHT),
+                Vector2::new(SCREEN_WIDTH, SCREEN_HEIGHT - HOTBAR_HEIGHT),
                 2.0,
                 Color::DARK_GRAY,
             );
@@ -421,11 +421,11 @@ impl WindowHandler for WinHandler {
                         let rect = Rectangle::new(
                             Vector2::new(
                                 img_x,
-                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                                SCREEN_HEIGHT - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
                             ),
                             Vector2::new(
                                 img_x + HOTBAR_CELL_SIZE,
-                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                                SCREEN_HEIGHT - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
                             ),
                         );
                         g.draw_rectangle_image_tinted(
@@ -440,7 +440,7 @@ impl WindowHandler for WinHandler {
                     }
                 }
                 else {
-                    let img_x = SCREEN_WIDTH as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING;
+                    let img_x = SCREEN_WIDTH - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING;
                     for i2 in 0..3 {
                         let img = match i2 {
                             0 => &assets.tool_place,
@@ -451,11 +451,11 @@ impl WindowHandler for WinHandler {
                         let rect = Rectangle::new(
                             Vector2::new(
                                 img_x,
-                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                                SCREEN_HEIGHT - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
                             ),
                             Vector2::new(
                                 img_x + HOTBAR_CELL_SIZE,
-                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                                SCREEN_HEIGHT - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
                             ),
                         );
                         g.draw_rectangle_image_tinted(
@@ -478,14 +478,14 @@ impl WindowHandler for WinHandler {
             unsafe {
                 let help_rect = Rectangle::new(
                     Vector2::new(0.0, 0.0),
-                    Vector2::new(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32),
+                    Vector2::new(SCREEN_WIDTH, SCREEN_HEIGHT),
                 );
                 g.draw_rectangle(
                     help_rect,
                     Color::from_hex_argb(0xee444444),
                 );
                 g.draw_text(
-                    Vector2::new(0.0, SCREEN_HEIGHT as f32 / 2.0),
+                    Vector2::new(0.0, SCREEN_HEIGHT / 2.0),
                     Color::WHITE,
                     self.help_text.as_ref().unwrap(),
                 );
@@ -649,11 +649,11 @@ impl WindowHandler for WinHandler {
                         let rect = Rectangle::new(
                             Vector2::new(
                                 img_x,
-                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                                SCREEN_HEIGHT - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
                             ),
                             Vector2::new(
                                 img_x + HOTBAR_CELL_SIZE,
-                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                                SCREEN_HEIGHT - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
                             ),
                         );
                         if is_inside(rect, self.mouse_pos) && button == MouseButton::Left {
@@ -663,16 +663,16 @@ impl WindowHandler for WinHandler {
                     }
                 }
                 else {
-                    let img_x = SCREEN_WIDTH as f32 - HOTBAR_CELL_SPACING - HOTBAR_CELL_SIZE;
+                    let img_x = SCREEN_WIDTH - HOTBAR_CELL_SPACING - HOTBAR_CELL_SIZE;
                     for i2 in 0..3 {
                         let rect = Rectangle::new(
                             Vector2::new(
                                 img_x,
-                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                                SCREEN_HEIGHT - HOTBAR_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
                             ),
                             Vector2::new(
                                 img_x + HOTBAR_CELL_SIZE,
-                                SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
+                                SCREEN_HEIGHT - HOTBAR_HEIGHT - HOTBAR_CELL_SPACING - (i2 as f32 * (HOTBAR_CELL_SPACING + HOTBAR_CELL_SIZE)),
                             ),
                         );
                         if is_inside(rect, self.mouse_pos) && button == MouseButton::Left {
@@ -694,11 +694,11 @@ impl WindowHandler for WinHandler {
                 let rect = Rectangle::new(
                     Vector2::new(
                         i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SPACING,
-                        SCREEN_HEIGHT as f32 - HOTBAR_HEIGHT + HOTBAR_CELL_SPACING,
+                        SCREEN_HEIGHT - HOTBAR_HEIGHT + HOTBAR_CELL_SPACING,
                     ),
                     Vector2::new(
                         i as f32 * (HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING) + HOTBAR_CELL_SIZE + HOTBAR_CELL_SPACING,
-                        SCREEN_HEIGHT as f32 - HOTBAR_CELL_SPACING,
+                        SCREEN_HEIGHT - HOTBAR_CELL_SPACING,
                     ),
                 );
                 if is_inside(rect, self.mouse_pos) {
@@ -715,12 +715,12 @@ impl WindowHandler for WinHandler {
 
             let tools_rect = Rectangle::new(
                 Vector2::new(
-                    SCREEN_WIDTH as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
-                    SCREEN_HEIGHT as f32 - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
+                    SCREEN_WIDTH - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
+                    SCREEN_HEIGHT - HOTBAR_CELL_SIZE - HOTBAR_CELL_SPACING,
                 ),
                 Vector2::new(
-                    SCREEN_WIDTH as f32 - HOTBAR_CELL_SPACING,
-                    SCREEN_HEIGHT as f32 - HOTBAR_CELL_SPACING,
+                    SCREEN_WIDTH - HOTBAR_CELL_SPACING,
+                    SCREEN_HEIGHT - HOTBAR_CELL_SPACING,
                 ),
             );
             if is_inside(tools_rect, self.mouse_pos) {
@@ -841,7 +841,7 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
                 )
             );
 
-            if let Some(cell) = grid.get_unchecked(x as isize, y as isize) {
+            if let Some(cell) = grid.get_unchecked(x, y) {
                 // draw cell
                 g.draw_rectangle_image(cell_rect, &assets.cells.get(&cell.id()).unwrap()[usize::from(cell.direction())]);
                 // if cell.id == MAILBOX {
