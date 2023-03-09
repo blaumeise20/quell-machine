@@ -8,13 +8,13 @@ description = "Another Cell Machine remake but focused on speed"
 speedy2d = "1.4"
 clipboard = "0.5"
 image = "0.24"
-libdeflater = "0.11"
-base64 = "0.20"
+libdeflater = "0.12"
+base64 = "0.21"
 
 [profile.release]
 opt-level = 3
-debug = false
-strip = "symbols"
+debug = true
+# strip = "symbols"
 lto = "fat"
 panic = "abort"
 codegen-units = 1

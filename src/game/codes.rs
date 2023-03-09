@@ -1,3 +1,4 @@
+use base64::{Engine, engine::general_purpose::STANDARD as base64};
 use libdeflater::{Compressor, CompressionLvl, Decompressor};
 
 use super::cells::{Cell, Grid};
@@ -92,7 +93,7 @@ pub fn export_q2(grid: &Grid) -> String {
     let mut data = vec![0; compressor.zlib_compress_bound(cell_result.len())];
     let len = compressor.zlib_compress(&cell_result, &mut data).unwrap();
 
-    result.push_str(&base64::encode(&data[..len]));
+    result.push_str(&base64.encode(&data[..len]));
     result
 }
 
@@ -152,7 +153,7 @@ fn decode_q1<'a>(width: usize, height: usize, input: impl Iterator<Item = &'a st
 fn decode_q2(width: usize, height: usize, input: &str) -> Result<Grid, &'static str> {
     let mut grid = Grid::new(width, height);
 
-    let data = base64::decode(input).map_err(|_| "invalid base64")?;
+    let data = base64.decode(input).map_err(|_| "invalid base64")?;
     let mut decompressor = Decompressor::new();
     let mut uncompressed = vec![0; width * height * 3];
     let len = decompressor.zlib_decompress(&data, &mut uncompressed).unwrap();
