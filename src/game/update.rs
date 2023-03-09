@@ -86,8 +86,8 @@ pub fn update(grid: &mut Grid) {
     for y in 0..grid.height as isize {
         for x in 0..grid.width as isize {
             if let Some(cell) = grid.get_mut(x, y) {
-                cell.updated = false;
-                cell_flags |= 1 << cell.id;
+                cell.set_updated(false);
+                cell_flags |= 1 << cell.id();
             }
         }
     }
@@ -127,8 +127,8 @@ pub fn update(grid: &mut Grid) {
 
 fn do_mirrors(grid: &mut Grid) {
     loop_each!(for x, y, cell in grid; {
-        if cell.id == MIRROR && cell.direction.shrink(2) == Direction::Right && !cell.updated {
-            cell.updated = true;
+        if cell.id() == MIRROR && cell.direction().shrink(2) == Direction::Right && !cell.updated() {
+            cell.set_updated(true);
             let cell_left = grid.get_mut(x - 1, y);
             let cell_right = grid.get_mut(x + 1, y);
             if let Some(cell) = cell_left { if !can_move(cell, Direction::Right, MoveForce::Swap) { continue; } }
@@ -140,8 +140,8 @@ fn do_mirrors(grid: &mut Grid) {
         }
     });
     loop_each!(for x, y, cell in grid; {
-        if cell.id == MIRROR && cell.direction.shrink(2) == Direction::Down && !cell.updated {
-            cell.updated = true;
+        if cell.id() == MIRROR && cell.direction().shrink(2) == Direction::Down && !cell.updated() {
+            cell.set_updated(true);
             let cell_up = grid.get_mut(x, y + 1);
             let cell_down = grid.get_mut(x, y - 1);
             if let Some(cell) = cell_up { if !can_move(cell, Direction::Down, MoveForce::Swap) { return; } }
@@ -156,8 +156,8 @@ fn do_mirrors(grid: &mut Grid) {
 
 fn do_crossmirrors(grid: &mut Grid) {
     loop_each!(for x, y, cell in grid; {
-        if cell.id == CROSSMIRROR && !cell.updated {
-            cell.updated = true;
+        if cell.id() == CROSSMIRROR && !cell.updated() {
+            cell.set_updated(true);
             let cell_left = grid.get_mut(x - 1, y);
             let cell_right = grid.get_mut(x + 1, y);
             let left_movable = if let Some(cell) = cell_left {
@@ -194,10 +194,10 @@ fn do_tunnels(grid: &mut Grid) {
         let push_offset = dir.to_vector();
         let cell_offset = dir.flip().to_vector();
     }, x, y, cell in grid; {
-        if cell.id == TUNNEL && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == TUNNEL && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                if can_move(cell, dir, MoveForce::Push) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), true).did_move() {
+                if can_move(cell, dir, MoveForce::Push) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.clone()), true).did_move() {
                     grid.set_cell(x + cell_offset.x, y + cell_offset.y, None);
                 }
             }
@@ -210,10 +210,10 @@ fn do_fixed_pullsher(grid: &mut Grid) {
         let push_offset = dir.to_vector();
         let cell_offset = dir.flip().to_vector();
     }, x, y, cell in grid; {
-        if cell.id == FIXED_PULLSHER && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == FIXED_PULLSHER && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                if can_move(cell, dir, MoveForce::Push) && !is_trash(cell, dir.flip()) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), true).did_move() {
+                if can_move(cell, dir, MoveForce::Push) && !is_trash(cell, dir.flip()) && push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.clone()), true).did_move() {
                     grid.set_cell(x + cell_offset.x, y + cell_offset.y, None);
                     pull(grid, x + cell_offset.x * 2, y + cell_offset.y * 2, dir);
                 }
@@ -226,23 +226,24 @@ fn do_suckers(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let push_offset = dir.to_vector();
     }, x, y, cell in grid; {
-        if cell.id == SUCKER && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == SUCKER && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             pull(grid, x + push_offset.x, y + push_offset.y, dir.flip());
         }
     });
 }
 
+#[inline(never)]
 fn do_gens(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let push_offset = dir.to_vector();
         let cell_offset = dir.flip().to_vector();
     }, x, y, cell in grid; {
-        if cell.id == GENERATOR && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == GENERATOR && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
                 if can_generate(cell) {
-                    push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), false);
+                    push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.clone()), false);
                 }
             }
         }
@@ -253,20 +254,20 @@ fn do_angled_gens(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let cell_offset = dir.flip().to_vector();
     }, x, y, cell in grid; {
-        if cell.id == GENERATOR_CW && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == GENERATOR_CW && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                let mut cell = cell.copy();
-                cell.direction = cell.direction.rotate_right();
+                let mut cell = cell.clone();
+                cell.set_direction(cell.direction().rotate_right());
                 let push_offset = dir.rotate_right().to_vector();
                 push(grid, x + push_offset.x, y + push_offset.y, dir.rotate_right(), 1, Some(cell), false);
             }
         }
-        else if cell.id == GENERATOR_CCW && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        else if cell.id() == GENERATOR_CCW && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                let mut cell = cell.copy();
-                cell.direction = cell.direction.rotate_left();
+                let mut cell = cell.clone();
+                cell.set_direction(cell.direction().rotate_left());
                 let push_offset = dir.rotate_left().to_vector();
                 push(grid, x + push_offset.x, y + push_offset.y, dir.rotate_left(), 1, Some(cell), false);
             }
@@ -279,11 +280,11 @@ fn do_physical_gens(grid: &mut Grid) {
         let push_offset = dir.to_vector();
         let cell_offset = dir.flip().to_vector();
     }, x, y, cell in grid; {
-        if cell.id == PHYSICAL_GENERATOR && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == PHYSICAL_GENERATOR && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(cell) = grid.get(x + cell_offset.x, y + cell_offset.y) {
-                if can_generate(cell) && !push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), false).did_move() {
-                    push(grid, x, y, dir.flip(), 1, Some(cell.copy()), false);
+                if can_generate(cell) && !push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.clone()), false).did_move() {
+                    push(grid, x, y, dir.flip(), 1, Some(cell.clone()), false);
                 }
             }
         }
@@ -297,16 +298,16 @@ fn do_cross_gens(grid: &mut Grid) {
         let push_offset_2 = dir.rotate_left().to_vector();
         let cell_offset_2 = dir.rotate_right().to_vector();
     }, x, y, cell in grid; {
-        if cell.id == GENERATOR_CROSS && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == GENERATOR_CROSS && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(cell) = grid.get(x + cell_offset_1.x, y + cell_offset_1.y) {
                 if can_generate(cell) {
-                    push(grid, x + push_offset_1.x, y + push_offset_1.y, dir, 1, Some(cell.copy()), false);
+                    push(grid, x + push_offset_1.x, y + push_offset_1.y, dir, 1, Some(cell.clone()), false);
                 }
             }
             if let Some(cell) = grid.get(x + cell_offset_2.x, y + cell_offset_2.y) {
                 if can_generate(cell) {
-                    push(grid, x + push_offset_2.x, y + push_offset_2.y, dir.rotate_left(), 1, Some(cell.copy()), false);
+                    push(grid, x + push_offset_2.x, y + push_offset_2.y, dir.rotate_left(), 1, Some(cell.clone()), false);
                 }
             }
         }
@@ -317,11 +318,11 @@ fn do_replicators(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let push_offset = dir.to_vector();
     }, x, y, cell in grid; {
-        if cell.id == REPLICATOR && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == REPLICATOR && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(cell) = grid.get(x + push_offset.x, y + push_offset.y) {
                 if can_generate(cell) {
-                    push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.copy()), false);
+                    push(grid, x + push_offset.x, y + push_offset.y, dir, 1, Some(cell.clone()), false);
                 }
             }
         }
@@ -333,8 +334,8 @@ fn do_replicators(grid: &mut Grid) {
 //         let mail_offset = dir.flip().to_vector();
 //         let mailbox_offset = dir.to_vector();
 //     }, x, y, cell in grid; {
-//         if cell.id == POSTOFFICE && cell.direction == dir && !cell.updated {
-//             cell.updated = true;
+//         if cell.id() == POSTOFFICE && cell.direction() == dir && !cell.updated() {
+//             cell.set_updated(true);
 //             if let Some(mailbox) = grid.get_mut(x + mailbox_offset.x, y + mailbox_offset.y) {
 //                 if mailbox.id == MAILBOX {
 //                     if let Some(mail) = grid.get_mut(x + mail_offset.x, y + mail_offset.y) {
@@ -349,25 +350,26 @@ fn do_replicators(grid: &mut Grid) {
 //     });
 // }
 
+#[inline(never)]
 fn do_rotators(grid: &mut Grid) {
     loop_each!(for x, y, cell in grid; {
-        if !cell.updated {
-            if cell.id == ROTATOR_CW {
-                cell.updated = true;
+        if !cell.updated() {
+            if cell.id() == ROTATOR_CW {
+                cell.set_updated(true);
                 rotate_by(grid, x + 1, y, Direction::Down, Direction::Left);
                 rotate_by(grid, x, y - 1, Direction::Down, Direction::Up);
                 rotate_by(grid, x - 1, y, Direction::Down, Direction::Right);
                 rotate_by(grid, x, y + 1, Direction::Down, Direction::Down);
             }
-            else if cell.id == ROTATOR_CCW {
-                cell.updated = true;
+            else if cell.id() == ROTATOR_CCW {
+                cell.set_updated(true);
                 rotate_by(grid, x + 1, y, Direction::Up, Direction::Left);
                 rotate_by(grid, x, y - 1, Direction::Up, Direction::Up);
                 rotate_by(grid, x - 1, y, Direction::Up, Direction::Right);
                 rotate_by(grid, x, y + 1, Direction::Up, Direction::Down);
             }
-            else if cell.id == ROTATOR_180 {
-                cell.updated = true;
+            else if cell.id() == ROTATOR_180 {
+                cell.set_updated(true);
                 rotate_by(grid, x + 1, y, Direction::Left, Direction::Left);
                 rotate_by(grid, x, y - 1, Direction::Left, Direction::Up);
                 rotate_by(grid, x - 1, y, Direction::Left, Direction::Right);
@@ -379,20 +381,20 @@ fn do_rotators(grid: &mut Grid) {
 
 fn do_orientators(grid: &mut Grid) {
     loop_each!(for x, y, cell in grid; {
-        if cell.id == ORIENTATOR && !cell.updated {
-            cell.updated = true;
-            rotate_to(grid, x + 1, y, cell.direction, Direction::Left);
-            rotate_to(grid, x, y - 1, cell.direction, Direction::Up);
-            rotate_to(grid, x - 1, y, cell.direction, Direction::Right);
-            rotate_to(grid, x, y + 1, cell.direction, Direction::Down);
+        if cell.id() == ORIENTATOR && !cell.updated() {
+            cell.set_updated(true);
+            rotate_to(grid, x + 1, y, cell.direction(), Direction::Left);
+            rotate_to(grid, x, y - 1, cell.direction(), Direction::Up);
+            rotate_to(grid, x - 1, y, cell.direction(), Direction::Right);
+            rotate_to(grid, x, y + 1, cell.direction(), Direction::Down);
         }
     });
 }
 
 fn do_stones(grid: &mut Grid) {
     loop_each_dir!(for dir, x, y, cell in grid; {
-        if cell.id == STONE && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == STONE && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if push(grid, x, y, dir.rotate_right(), 1, None, false).did_move_survive() {
                 // complex logic lol
 
@@ -473,8 +475,8 @@ fn do_stones(grid: &mut Grid) {
 
 // fn do_mailboxes(grid: &mut Grid) {
 //     loop_each_dir!(for dir, x, y, cell in grid; {
-//         if cell.id == MAILBOX && cell.direction == dir && !cell.updated {
-//             cell.updated = true;
+//         if cell.id() == MAILBOX && cell.direction() == dir && !cell.updated() {
+//             cell.set_updated(true);
 //             if let Some(contained) = cell.contained_cell {
 //                 if !push(grid, x, y, dir, 1, None, false).did_move() {
 //                     grid.set(x, y, Cell::new(contained.0, dir + contained.1));
@@ -488,8 +490,8 @@ fn do_pullshers(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let off = dir.to_vector();
     }, x, y, cell in grid; {
-        if cell.id == PULLSHER && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == PULLSHER && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if push(grid, x, y, dir, 1, None, true).did_move() {
                 pull(grid, x - off.x, y - off.y, dir);
             }
@@ -501,8 +503,8 @@ fn do_trashpullers(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let off = dir.flip().to_vector();
     }, x, y, cell in grid; {
-        if cell.id == TRASHPULLER && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == TRASHPULLER && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(pushed) = grid.get(x + off.x, y + off.y) {
                 if can_move(pushed, dir, MoveForce::Pull) && !is_trash(pushed, dir) {
                     grid.delete(x + off.x, y + off.y);
@@ -519,8 +521,8 @@ fn do_pullers(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let off = dir.to_vector();
     }, x, y, cell in grid; {
-        if cell.id == PULLER && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == PULLER && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if grid.is_in_bounds(x + off.x, y + off.y) && grid.get(x + off.x, y + off.y).is_none() {
                 pull(grid, x, y, dir);
             }
@@ -532,8 +534,8 @@ fn do_trashmovers(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let off = dir.to_vector();
     }, x, y, cell in grid; {
-        if cell.id == TRASHMOVER && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == TRASHMOVER && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if let Some(pushed) = grid.get(x + off.x, y + off.y) {
                 if !can_move(pushed, dir, MoveForce::Push) || is_trash(cell, dir) {
                     return;
@@ -545,10 +547,11 @@ fn do_trashmovers(grid: &mut Grid) {
     });
 }
 
+#[inline(never)]
 fn do_movers(grid: &mut Grid) {
     loop_each_dir!(for dir, x, y, cell in grid; {
-        if cell.id == MOVER && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == MOVER && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             push(grid, x, y, dir, 0, None, true);
         }
     });
@@ -558,8 +561,8 @@ fn do_speeds(grid: &mut Grid) {
     loop_each_dir!(for dir {
         let off = dir.to_vector();
     }, x, y, cell in grid; {
-        if cell.id == SPEED && cell.direction == dir && !cell.updated {
-            cell.updated = true;
+        if cell.id() == SPEED && cell.direction() == dir && !cell.updated() {
+            cell.set_updated(true);
             if grid.get(x + off.x, y + off.y).is_none() {
                 push(grid, x, y, dir, 0, None, true);
             }

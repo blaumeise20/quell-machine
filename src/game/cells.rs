@@ -10,53 +10,75 @@ pub type CellType = u8;
 static mut DUMMY_CELL: Option<Cell> = None;
 
 /// Represents a cell on a grid.
+///
+/// # Internal layout
+///
+/// The cell is stored as a single byte. It uses the following layout:
+/// ```txt
+/// UCCCCCDD
+/// ```
+/// Where:
+/// - `U`: The updated flag. If set, the cell has been updated this tick.
+/// - `C`: The cell type.
+/// - `D`: The direction.
 #[derive(Debug)]
-pub struct Cell {
-    pub id: CellType,
-    pub direction: Direction,
-    pub updated: bool,
-}
+pub struct Cell(u8);
 
 impl Cell {
     /// Creates a new cell.
     #[inline(always)]
     pub fn new(id: CellType, direction: Direction) -> Self {
-        Cell {
-            id,
-            direction,
-            updated: false,
-        }
+        Cell((id << 2) | direction as u8)
     }
 
-    /// Creates a copy of the cell,
-    /// without copying the updated state.
+    /// Gets the cell type.
     #[inline(always)]
-    pub fn copy(&self) -> Self {
-        Cell {
-            id: self.id,
-            direction: self.direction,
-            updated: false,
-        }
+    pub fn id(&self) -> CellType {
+        (self.0 & 124) >> 2
+    }
+
+    /// Gets the direction.
+    #[inline(always)]
+    pub fn direction(&self) -> Direction {
+        (self.0 & 3).into()
+    }
+
+    /// Sets the direction.
+    #[inline(always)]
+    pub fn set_direction(&mut self, direction: Direction) {
+        self.0 = (self.0 & 252) | (direction as u8);
+    }
+
+    /// Gets the updated flag.
+    #[inline(always)]
+    pub fn updated(&self) -> bool {
+        self.0 & 128 != 0
+    }
+
+    /// Sets the updated flag.
+    #[inline(always)]
+    pub fn set_updated(&mut self, updated: bool) {
+        self.0 = (self.0 & 127) | ((updated as u8) << 7);
     }
 
     pub fn looks_like(&self, other: &Cell) -> bool {
-        if self.id != other.id {
+        if self.0 & 124 != other.0 & 124 {
             return false;
         }
-        let max_rot = CELL_DATA.iter().find(|cd| cd.id == self.id).unwrap().sides as u8;
-        self.direction.shrink(max_rot) == other.direction.shrink(max_rot)
+        let max_rot = CELL_DATA.iter().find(|cd| cd.id == (self.0 & 124) >> 2).unwrap().sides as u8;
+        (self.0 & 3) % max_rot == (other.0 & 3) % max_rot
     }
 }
 
 impl Clone for Cell {
     fn clone(&self) -> Self {
-        self.copy()
+        Cell(self.0 & 127)
     }
 }
 
 impl PartialEq for Cell {
     fn eq(&self, other: &Cell) -> bool {
-        self.id == other.id && self.direction == other.direction
+        self.0 & 127 == other.0 & 127
     }
 }
 impl Eq for Cell {}

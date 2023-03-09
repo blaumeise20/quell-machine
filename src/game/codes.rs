@@ -15,7 +15,7 @@ pub fn export_q1(grid: &Grid) -> String {
     let mut cell_arr = Vec::new();
     grid.for_each(|_, _, cell| {
         if let Some(cell) = cell {
-            cell_arr.push(format!("{}{}", encode_num_62(cell.id), u8::from(cell.direction)));
+            cell_arr.push(format!("{}{}", encode_num_62(cell.id()), u8::from(cell.direction())));
         }
         else {
             cell_arr.push(String::new());
@@ -62,7 +62,7 @@ pub fn export_q2(grid: &Grid) -> String {
 
     let mut cell_arr = Vec::new();
     grid.for_each(|_, _, cell| {
-        let val = if let Some(cell) = cell { 1 + 4 * cell.id as usize + usize::from(cell.direction) }
+        let val = if let Some(cell) = cell { 1 + 4 * cell.id() as usize + usize::from(cell.direction()) }
                     else { 0 };
         cell_arr.push(encode_num_s64(val));
     });

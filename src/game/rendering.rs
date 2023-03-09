@@ -843,7 +843,7 @@ unsafe fn draw_grid(assets: &Assets, g: &mut Graphics2D) {
 
             if let Some(cell) = grid.get_unchecked(x as isize, y as isize) {
                 // draw cell
-                g.draw_rectangle_image(cell_rect, &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]);
+                g.draw_rectangle_image(cell_rect, &assets.cells.get(&cell.id()).unwrap()[usize::from(cell.direction())]);
                 // if cell.id == MAILBOX {
                 //     if let Some((id, dir)) = cell.contained_cell {
                 //         let cell_rect = Rectangle::new(
@@ -884,7 +884,7 @@ unsafe fn draw_ghost_cell(assets: &Assets, g: &mut Graphics2D, x: isize, y: isiz
     g.draw_rectangle_image_tinted(
         cell_rect,
         Color::from_hex_argb(0x70ffffff),
-        &assets.cells.get(&cell.id).unwrap()[usize::from(cell.direction)]
+        &assets.cells.get(&cell.id()).unwrap()[usize::from(cell.direction())]
     );
 }
 
